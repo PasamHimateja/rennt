@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "657979554409",
+    "project_id": "rennto-fcm",
+    "storage_bucket": "rennto-fcm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:657979554409:android:82cb95b5bbb3bf513100f8",
+        "android_client_info": {
+          "package_name": "in.rennto.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKfJ1jcIzS7ZPNV1goZBh65pu-JoGZths"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
