@@ -114,8 +114,6 @@ urlpatterns = [
     path('withdraw_request/', views.withdraw_request),
     path('tenant/join_booking/', views.tenant_join_booking, name='tenant_join_booking'),
     path('tenant/pending_allotment/<str:phone>/', views.get_pending_allotment, name='get_pending_allotment'),
-    path('forgot-password/', views.forgot_password, name='forgot_password'),
-    path('reset-password/<str:token>/', views.reset_password, name='reset_password'),
     path('delete_tenent_request/<str:phone>/', views.delete_tenent_request),
     path('admin_home/', views.admin_home),
     path('get_all_property_basic_details/', views.get_all_property_basic_details),
@@ -143,11 +141,10 @@ urlpatterns = [
     path('notifications/<str:phone>/', views.get_notifications),
     path('notifications/<int:notification_id>/read/', views.mark_notification_read),
     path('notifications/<str:phone>/mark-all-read/', views.mark_all_notifications_read),
-    path('send-otp/', views.send_otp, name='send_otp'),
     path('tenant_notifications/<str:identifier>/',
         views.tenant_notifications
     ),
-    path('verify-otp/', views.verify_otp, name='verify_otp'),
+
     path(
     'check-user/<str:phone>/',
     views.check_user,

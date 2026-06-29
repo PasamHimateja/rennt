@@ -45,12 +45,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 
-const NAVY = COLORS.PRIMARY;
-const LIGHT_PURPLE = "#7C3AED";
-const WHITE = COLORS.WHITE;
-const GRAY = COLORS.TEXT_SECONDARY;
-const LIGHT_GRAY = COLORS.CARD;
-const DOT_INACTIVE = COLORS.DIVIDER;
+const NAVY = "#1E293B"; // Slate 800
+const LIGHT_PURPLE = "#8B5CF6"; // Violet 500
+const WHITE = "#FFFFFF";
+const GRAY = "#64748B"; // Slate 500
+const LIGHT_GRAY = "#F8FAFC"; // Slate 50
+const DOT_INACTIVE = "#E2E8F0"; // Slate 200
 let MapView, Marker, PROVIDER_GOOGLE;
 try {
   if (Platform.OS !== "web") {
@@ -852,7 +852,7 @@ async function registerForPushNotificationsAsync() {
         return;
       }
       result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: !isMultiple,
         quality: 0.8,
       });
@@ -863,7 +863,7 @@ async function registerForPushNotificationsAsync() {
         return;
       }
       result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: !isMultiple,
         allowsMultipleSelection: isMultiple,
         quality: 0.8,
@@ -1137,30 +1137,117 @@ async function registerForPushNotificationsAsync() {
               </View>
             </View>
           </Modal>
-          <Modal transparent visible={showImagePickerModal} animationType="fade">
-            <View style={styles.loadingOverlay}>
-              <View style={[styles.loadingCard, { width: "80%" }]}>
-                <Text style={styles.sectionTitle}>Upload Image</Text>
-                <TouchableOpacity
-                  style={[styles.btn, { width: "100%", marginBottom: 10, backgroundColor: "#10b981" }]}
-                  onPress={() => handleImageSelection("camera")}
-                >
-                  <Text style={styles.btnText}>Take Photo</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.btn, { width: "100%", marginBottom: 10 }]}
-                  onPress={() => handleImageSelection("gallery")}
-                >
-                  <Text style={styles.btnText}>Choose from Gallery</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.btn, { width: "100%", backgroundColor: "#dc2626" }]}
-                  onPress={() => setShowImagePickerModal(false)}
-                >
-                  <Text style={styles.btnText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+          <Modal transparent visible={showImagePickerModal} animationType="slide" onRequestClose={() => setShowImagePickerModal(false)}>
+            <TouchableOpacity
+              style={{ flex: 1, backgroundColor: "rgba(15,15,30,0.55)", justifyContent: "flex-end" }}
+              activeOpacity={1}
+              onPress={() => setShowImagePickerModal(false)}
+            >
+              <TouchableWithoutFeedback>
+                <View style={{
+                  backgroundColor: "#FFFFFF",
+                  borderTopLeftRadius: 28,
+                  borderTopRightRadius: 28,
+                  paddingBottom: Platform.OS === "ios" ? 40 : 24,
+                  paddingTop: 12,
+                  paddingHorizontal: 24,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 16,
+                  elevation: 20,
+                }}>
+                  {/* Drag Handle */}
+                  <View style={{ width: 40, height: 4, backgroundColor: "#D1D5DB", borderRadius: 4, alignSelf: "center", marginBottom: 20 }} />
+
+                  {/* Illustration */}
+                  <View style={{ alignItems: "center", marginBottom: 24 }}>
+                    <View style={{
+                      width: 60, height: 60, borderRadius: 30,
+                      backgroundColor: "#F5F3FF",
+                      justifyContent: "center", alignItems: "center",
+                      marginBottom: 14,
+                    }}>
+                      <Ionicons name="image-outline" size={28} color="#7C3AED" />
+                      <View style={{ position: 'absolute', bottom: 12, right: 10, backgroundColor: '#FFFFFF', borderRadius: 10 }}>
+                        <Ionicons name="add-circle" size={16} color="#7C3AED" />
+                      </View>
+                    </View>
+                    <Text style={{ fontSize: 20, fontWeight: "800", color: "#111827", marginBottom: 6 }}>Upload Image</Text>
+                    <Text style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>Choose an option to upload your image</Text>
+                  </View>
+
+                  {/* Take Photo */}
+                  <TouchableOpacity
+                    onPress={() => handleImageSelection("camera")}
+                    activeOpacity={0.7}
+                    style={{
+                      flexDirection: "row", alignItems: "center",
+                      padding: 16, borderRadius: 16,
+                      borderWidth: 1, borderColor: "#E9E1FF",
+                      backgroundColor: "#FAFAFF",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <View style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center",
+                      marginRight: 16,
+                      shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+                    }}>
+                      <Ionicons name="camera-outline" size={24} color="#7C3AED" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827", marginBottom: 2 }}>Take Photo</Text>
+                      <Text style={{ fontSize: 13, color: "#6B7280" }}>Open camera and take a new photo</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#7C3AED" />
+                  </TouchableOpacity>
+
+                  {/* Choose from Gallery */}
+                  <TouchableOpacity
+                    onPress={() => handleImageSelection("gallery")}
+                    activeOpacity={0.7}
+                    style={{
+                      flexDirection: "row", alignItems: "center",
+                      padding: 16, borderRadius: 16,
+                      borderWidth: 1, borderColor: "#E5E7EB",
+                      backgroundColor: "#FFFFFF",
+                      marginBottom: 24,
+                    }}
+                  >
+                    <View style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center",
+                      marginRight: 16
+                    }}>
+                      <Ionicons name="image-outline" size={24} color="#7C3AED" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827", marginBottom: 2 }}>Choose from Gallery</Text>
+                      <Text style={{ fontSize: 13, color: "#6B7280" }}>Select an image from your device</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#7C3AED" />
+                  </TouchableOpacity>
+
+                  {/* Cancel Button */}
+                  <TouchableOpacity
+                    onPress={() => setShowImagePickerModal(false)}
+                    activeOpacity={0.7}
+                    style={{
+                      flexDirection: "row", alignItems: "center", justifyContent: "center",
+                      paddingVertical: 14, borderRadius: 16,
+                      borderWidth: 1, borderColor: "#FECACA",
+                      backgroundColor: "#FEF2F2"
+                    }}
+                  >
+                    <Ionicons name="close" size={20} color="#EF4444" style={{ marginRight: 6 }} />
+                    <Text style={{ color: "#EF4444", fontSize: 16, fontWeight: "700" }}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableWithoutFeedback>
+            </TouchableOpacity>
           </Modal>
 
           <View style={styles.page}>
@@ -1199,8 +1286,8 @@ async function registerForPushNotificationsAsync() {
               <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                 <View style={{ flex: 1 }}>
                   {/* STEP INDICATOR CARD */}
-                  <Animated.View style={[styles.sectionCard, { paddingVertical: stepCardPadding, paddingTop: stepCardPadding, paddingBottom: stepCardPadding }]}>
-                    <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "flex-start" }}>
+                  <View style={[styles.sectionCard, { paddingVertical: 10, paddingHorizontal: 16, marginBottom: 10 }]}>
+                    <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
                   {[1, 2].map((i) => {
                     const isActive = step === i;
                     const isCompleted = step > i;
@@ -1209,16 +1296,14 @@ async function registerForPushNotificationsAsync() {
                     return (
                     <React.Fragment key={i}>
                       <View style={{ alignItems: "center" }}>
-                        <Animated.View
-                          style={[
-                            { 
-                              width: stepCircleSize,
-                              height: stepCircleSize,
-                              borderRadius: stepCircleRadius,
-                              overflow: "hidden",
-                              backgroundColor: isInactive ? "#E5E7EB" : LIGHT_PURPLE,
-                            },
-                          ]}
+                        <View
+                          style={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: 20,
+                            overflow: "hidden",
+                            backgroundColor: isInactive ? "#E5E7EB" : LIGHT_PURPLE,
+                          }}
                         >
                           {isActive ? (
                             <LinearGradient
@@ -1227,65 +1312,41 @@ async function registerForPushNotificationsAsync() {
                               end={{ x: 1, y: 1 }}
                               style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
                             >
-                              <Animated.View style={{ transform: [{ scale: stepIconScale }] }}>
-                                <FontAwesome
-                                  name={i === 1 ? "user" : "home"}
-                                  size={24}
-                                  color={WHITE}
-                                />
-                              </Animated.View>
+                              <FontAwesome name={i === 1 ? "user" : "home"} size={18} color={WHITE} />
                             </LinearGradient>
                           ) : (
                             <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                              <Animated.View style={{ transform: [{ scale: stepIconScale }] }}>
-                                {isCompleted ? (
-                                  <FontAwesome
-                                    name="check"
-                                    size={24}
-                                    color={WHITE}
-                                  />
-                                ) : (
-                                  <FontAwesome
-                                    name={i === 1 ? "user" : "home"}
-                                    size={24}
-                                    color="#9CA3AF"
-                                  />
-                                )}
-                              </Animated.View>
+                              {isCompleted ? (
+                                <FontAwesome name="check" size={18} color={WHITE} />
+                              ) : (
+                                <FontAwesome name={i === 1 ? "user" : "home"} size={18} color="#9CA3AF" />
+                              )}
                             </View>
                           )}
-                        </Animated.View>
-
-                        <Animated.View style={{ opacity: stepLabelOpacity, height: stepLabelHeight, overflow: "hidden", marginTop: 10, alignItems: "center" }}>
-                          <Text style={{ fontSize: 15, fontWeight: "bold", color: "#111827", textAlign: "center" }}>
-                            {i === 1 ? "Registration" : "Stay Details"}
-                          </Text>
-                          <Text style={{ fontSize: 12, fontWeight: "500", color: "#6B7280", textAlign: "center", marginTop: 2 }}>
-                            {i === 1 ? "Owner Details" : "Property Information"}
-                          </Text>
-                        </Animated.View>
+                        </View>
+                        <Text style={{ fontSize: 11, fontWeight: "600", color: isActive ? LIGHT_PURPLE : (isCompleted ? "#10B981" : "#9CA3AF"), marginTop: 5, textAlign: "center" }}>
+                          {i === 1 ? "Owner Info" : "Floor Layout"}
+                        </Text>
                       </View>
                       {i < 2 && (
-                        <Animated.View style={[{ width: stepLineLength, marginHorizontal: 12, height: 4, backgroundColor: "#E5E7EB", borderRadius: 2, marginTop: 26 }]}>
+                        <View style={{ flex: 1, height: 3, backgroundColor: "#E5E7EB", borderRadius: 2, marginHorizontal: 10, marginBottom: 14 }}>
                           <Animated.View
-                            style={[
-                              {
-                                height: "100%",
-                                backgroundColor: LIGHT_PURPLE,
-                                borderRadius: 2,
-                                width: lineProgress[i - 1].interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: ["0%", "100%"]
-                                }),
-                              },
-                            ]}
+                            style={{
+                              height: "100%",
+                              backgroundColor: LIGHT_PURPLE,
+                              borderRadius: 2,
+                              width: lineProgress[i - 1].interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ["0%", "100%"]
+                              }),
+                            }}
                           />
-                        </Animated.View>
+                        </View>
                       )}
                     </React.Fragment>
                   )})}
                 </View>
-                    </Animated.View>
+                  </View>
 
                   {/* ---------- STEP 1 ---------- */}
 
@@ -1361,7 +1422,7 @@ async function registerForPushNotificationsAsync() {
                       <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
                         Identity Proof Type <Text style={{ color: "#EF4444" }}>*</Text>
                       </Text>
-                      <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }]}>
+                      <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }, errors.idProofType && styles.inputError]}>
                         <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
                           <FontAwesome name="id-card-o" size={18} color={LIGHT_PURPLE} />
                         </View>
@@ -1382,7 +1443,6 @@ async function registerForPushNotificationsAsync() {
                           style={[
                             styles.picker,
                             { flex: 1, height: 50, marginLeft: -10 },
-                            errors.idProofType && styles.inputError,
                           ]}
                         >
                           <Picker.Item label="Select ID type" value="" color="gray" />
@@ -1498,7 +1558,7 @@ async function registerForPushNotificationsAsync() {
                     <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
                       Stay Type <Text style={{ color: "#EF4444" }}>*</Text>
                     </Text>
-                    <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }]}>
+                    <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }, errors.stayType && styles.inputError]}>
                       <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
                         <FontAwesome name="building-o" size={18} color={LIGHT_PURPLE} />
                       </View>
@@ -1510,7 +1570,6 @@ async function registerForPushNotificationsAsync() {
                         style={[
                           styles.picker,
                           { flex: 1, height: 50, marginLeft: -10 },
-                          errors.stayType && styles.inputError,
                         ]}
                       >
                         <Picker.Item label={t("select_stay_type")} value="" color="gray" />
@@ -1561,7 +1620,7 @@ async function registerForPushNotificationsAsync() {
                           </Text>
                         ) : null}
 
-                        <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>Hotel / Property Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
+                        <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>Location <Text style={{ color: "#EF4444" }}>*</Text></Text>
                         <View
                           style={[
                             styles.inputContainer,
@@ -1678,25 +1737,27 @@ async function registerForPushNotificationsAsync() {
                         ) : null}
 
                         <Text style={styles.label}>{t("hostel_type")}</Text>
-                        <Picker
-                          selectedValue={form.hostelType}
-                          onValueChange={(v) => {
-                            setForm({ ...form, hostelType: v });
-                            setErrors({
-                              ...errors,
-                              hostelType: validateRequired(v, t("hostel_type")),
-                            });
-                          }}
-                          style={[
-                            styles.picker,
-                            errors.hostelType && styles.inputError,
-                          ]}
-                        >
-                          <Picker.Item label={t("select_type")} value="" />
-                          <Picker.Item label={t("boys")} value="boys" />
-                          <Picker.Item label={t("girls")} value="girls" />
-                          <Picker.Item label={t("coliving")} value="coliving" />
-                        </Picker>
+                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.hostelType && styles.inputError]}>
+                          <Picker
+                            selectedValue={form.hostelType}
+                            onValueChange={(v) => {
+                              setForm({ ...form, hostelType: v });
+                              setErrors({
+                                ...errors,
+                                hostelType: validateRequired(v, t("hostel_type")),
+                              });
+                            }}
+                            style={[
+                              styles.picker,
+                              { flex: 1, height: 50 },
+                            ]}
+                          >
+                            <Picker.Item label={t("select_type")} value="" />
+                            <Picker.Item label={t("boys")} value="boys" />
+                            <Picker.Item label={t("girls")} value="girls" />
+                            <Picker.Item label={t("coliving")} value="coliving" />
+                          </Picker>
+                        </View>
                         {errors.hostelType ? (
                           <Text style={styles.errorText}>
                             {errors.hostelType}
@@ -2144,20 +2205,22 @@ async function registerForPushNotificationsAsync() {
                         )}
 
                         <Text style={styles.label}>{t("tenant_type")}</Text>
-                        <Picker
-                          selectedValue={form.tenantType}
-                          onValueChange={(v) => {
-                            setForm({ ...form, tenantType: v });
-                          }}
-                          style={[
-                            styles.picker,
-                            errors.tenantType && styles.inputError,
-                          ]}
-                        >
-                          <Picker.Item label={t("select")} value="" />
-                          <Picker.Item label={t("family")} value="family" />
-                          <Picker.Item label={t("bachelors")} value="bachelors" />
-                        </Picker>
+                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.tenantType && styles.inputError]}>
+                          <Picker
+                            selectedValue={form.tenantType}
+                            onValueChange={(v) => {
+                              setForm({ ...form, tenantType: v });
+                            }}
+                            style={[
+                              styles.picker,
+                              { flex: 1, height: 50 },
+                            ]}
+                          >
+                            <Picker.Item label={t("select")} value="" />
+                            <Picker.Item label={t("family")} value="family" />
+                            <Picker.Item label={t("bachelors")} value="bachelors" />
+                          </Picker>
+                        </View>
                         {errors.tenantType ? (
                           <Text style={styles.errorText}>
                             {errors.tenantType}
@@ -2609,20 +2672,22 @@ async function registerForPushNotificationsAsync() {
                         ) : null}
 
                         <Text style={styles.label}>{t("usage")}</Text>
-                        <Picker
-                          selectedValue={form.usage}
-                          onValueChange={(v) => {
-                            setForm({ ...form, usage: v });
-                          }}
-                          style={[
-                            styles.picker,
-                            errors.usage && styles.inputError,
-                          ]}
-                        >
-                          <Picker.Item label={t("select")} value="" />
-                          <Picker.Item label={t("lease")} value="lease" />
-                          <Picker.Item label={t("rent")} value="rent" />
-                        </Picker>
+                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.usage && styles.inputError]}>
+                          <Picker
+                            selectedValue={form.usage}
+                            onValueChange={(v) => {
+                              setForm({ ...form, usage: v });
+                            }}
+                            style={[
+                              styles.picker,
+                              { flex: 1, height: 50 },
+                            ]}
+                          >
+                            <Picker.Item label={t("select")} value="" />
+                            <Picker.Item label={t("lease")} value="lease" />
+                            <Picker.Item label={t("rent")} value="rent" />
+                          </Picker>
+                        </View>
                         {errors.usage ? (
                           <Text style={styles.errorText}>{errors.usage}</Text>
                         ) : null}
@@ -2767,63 +2832,87 @@ async function registerForPushNotificationsAsync() {
                       </>
                     )}
 
-                    {/* Home pictures (multiple) */}
                     {/* ===== COVER IMAGE UPLOAD ===== */}
                     {form.stayType !== "" && (
-                      <View style={{ marginVertical: 10 }}>
-                        <Text style={{ fontSize: 16, fontWeight: "bold", color: "#111827", marginBottom: 2 }}>Cover Image</Text>
-                        <Text style={{ color: "#6B7280", fontSize: 13, marginBottom: 12 }}>
-                          Upload a thumbnail for your property
-                        </Text>
+                      <View style={{ marginTop: 8, marginBottom: 4 }}>
+                        {/* Section Header */}
+                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                          <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                            <Ionicons name="image" size={18} color="#7C3AED" />
+                          </View>
+                          <View>
+                            <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Cover Image</Text>
+                            <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 1 }}>Used as the main thumbnail</Text>
+                          </View>
+                        </View>
 
                         {form.documents.coverImage ? (
                           <View style={{
-                            borderRadius: 16,
-                            overflow: "hidden",
-                            borderWidth: 1,
-                            borderColor: "#E5E7EB",
+                            borderRadius: 20, overflow: "hidden",
+                            borderWidth: 1.5, borderColor: "#DDD6FE",
+                            shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
                             marginBottom: 8,
-                            position: "relative"
                           }}>
                             <Image
                               source={{ uri: form.documents.coverImage.uri }}
-                              style={{ width: "100%", height: 140, borderRadius: 14 }}
+                              style={{ width: "100%", height: 180 }}
                               resizeMode="cover"
                             />
-                            <TouchableOpacity
-                              style={{
-                                position: "absolute",
-                                top: 10,
-                                right: 10,
-                                backgroundColor: "rgba(0,0,0,0.6)",
-                                borderRadius: 20,
-                                padding: 8,
-                              }}
-                              onPress={() => openImagePicker("coverImage")}
-                            >
-                              <Ionicons name="camera" size={16} color="#FFF" />
-                            </TouchableOpacity>
+                            {/* Overlay bar */}
+                            <View style={{
+                              position: "absolute", bottom: 0, left: 0, right: 0,
+                              backgroundColor: "rgba(0,0,0,0.45)",
+                              flexDirection: "row", alignItems: "center",
+                              paddingVertical: 10, paddingHorizontal: 14,
+                            }}>
+                              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                                <Ionicons name="checkmark-circle" size={16} color="#34D399" />
+                                <Text style={{ fontSize: 13, color: "#FFFFFF", marginLeft: 6, fontWeight: "600" }}>Cover image uploaded</Text>
+                              </View>
+                              <TouchableOpacity
+                                onPress={() => openImagePicker("coverImage")}
+                                style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10 }}
+                              >
+                                <Ionicons name="pencil" size={14} color="#FFF" />
+                                <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "600", marginLeft: 4 }}>Change</Text>
+                              </TouchableOpacity>
+                            </View>
                           </View>
                         ) : (
                           <TouchableOpacity
                             style={{
+                              borderRadius: 20,
                               borderWidth: 2,
-                              borderColor: errors.document_coverImage ? "#dc2626" : "#E9D5FF",
                               borderStyle: "dashed",
-                              borderRadius: 16,
-                              height: 140,
+                              borderColor: errors.document_coverImage ? "#EF4444" : "#C4B5FD",
+                              backgroundColor: "#FAFAFF",
                               alignItems: "center",
                               justifyContent: "center",
-                              backgroundColor: "#F8F9FC",
+                              paddingVertical: 32,
                               marginBottom: 8,
+                              shadowColor: "#7C3AED",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.06,
+                              shadowRadius: 8,
+                              elevation: 1,
                             }}
                             onPress={() => openImagePicker("coverImage")}
+                            activeOpacity={0.8}
                           >
-                            <Ionicons name="camera" size={28} color={LIGHT_PURPLE} />
-                            <Text style={{ color: LIGHT_PURPLE, fontWeight: "600", marginTop: 8, fontSize: 14 }}>
-                              Tap to upload Cover Image
-                            </Text>
-                            <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 4 }}>JPG, PNG • Max 5MB</Text>
+                            <View style={{
+                              width: 68, height: 68, borderRadius: 34,
+                              backgroundColor: "#F5F3FF",
+                              justifyContent: "center", alignItems: "center",
+                              marginBottom: 14,
+                              shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 },
+                              shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
+                            }}>
+                              <Ionicons name="cloud-upload-outline" size={32} color="#7C3AED" />
+                            </View>
+                            <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E1B4B", marginBottom: 4 }}>Upload Cover Image</Text>
+                            <Text style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 2 }}>Recommended: 16:9 ratio</Text>
+                            <Text style={{ fontSize: 11, color: "#C4B5FD", fontWeight: "500" }}>JPG, PNG • Max 5 MB</Text>
                           </TouchableOpacity>
                         )}
                         {errors.document_coverImage ? (
@@ -2833,31 +2922,59 @@ async function registerForPushNotificationsAsync() {
                     )}
                     {/* ===== PROPERTY GALLERY ===== */}
                     {form.stayType !== "" && (
-                      <View style={{ marginVertical: 15 }}>
-                        <Text style={{ fontSize: 16, fontWeight: "bold", color: "#111827", marginBottom: 2 }}>Property Gallery</Text>
-                        <Text style={{ color: "#6B7280", fontSize: 13, marginBottom: 12 }}>
-                          Upload room and property photos
-                        </Text>
-                        
+                      <View style={{ marginTop: 8, marginBottom: 8 }}>
+                        {/* Section Header */}
+                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center" }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                              <Ionicons name="images" size={18} color="#7C3AED" />
+                            </View>
+                            <View>
+                              <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Property Gallery</Text>
+                              <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 1 }}>Upload room & property photos</Text>
+                            </View>
+                          </View>
+                          {/* Photo count badge */}
+                          {Array.isArray(form.documents.homePics) && form.documents.homePics.length > 0 && (
+                            <View style={{ backgroundColor: "#7C3AED", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
+                              <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>{form.documents.homePics.length}/10</Text>
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Upload Card */}
                         <TouchableOpacity
                           style={{
-                            borderWidth: 2,
-                            borderColor: errors.document_homePics ? "#dc2626" : "#D8B4FE",
-                            borderStyle: "dashed",
                             borderRadius: 20,
-                            height: 220,
+                            borderWidth: 2,
+                            borderStyle: "dashed",
+                            borderColor: errors.document_homePics ? "#EF4444" : "#DDD6FE",
+                            backgroundColor: "#FAFAFF",
                             alignItems: "center",
                             justifyContent: "center",
-                            backgroundColor: "#F5F3FF",
-                            marginBottom: 16,
+                            paddingVertical: 26,
+                            marginBottom: 12,
+                            shadowColor: "#7C3AED",
+                            shadowOffset: { width: 0, height: 2 },
+                            shadowOpacity: 0.06,
+                            shadowRadius: 8,
+                            elevation: 1,
                           }}
                           onPress={() => openImagePicker("homePics")}
+                          activeOpacity={0.8}
                         >
-                          <Ionicons name="images" size={48} color={LIGHT_PURPLE} style={{ opacity: 0.8 }} />
-                          <Text style={{ color: LIGHT_PURPLE, fontWeight: "700", marginTop: 12, fontSize: 16 }}>
-                            Tap to upload multiple images
-                          </Text>
-                          <Text style={{ color: "#9CA3AF", fontSize: 13, marginTop: 6 }}>Maximum 10 photos</Text>
+                          <View style={{
+                            width: 64, height: 64, borderRadius: 32,
+                            backgroundColor: "#F5F3FF",
+                            justifyContent: "center", alignItems: "center",
+                            marginBottom: 12,
+                            shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 },
+                            shadowOpacity: 0.14, shadowRadius: 8, elevation: 3,
+                          }}>
+                            <Ionicons name="images-outline" size={30} color="#7C3AED" />
+                          </View>
+                          <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E1B4B", marginBottom: 4 }}>Upload Property Gallery</Text>
+                          <Text style={{ fontSize: 12, color: "#9CA3AF" }}>Maximum 10 Photos • JPG, PNG</Text>
                         </TouchableOpacity>
 
                         {errors.document_homePics ? (
@@ -2866,26 +2983,24 @@ async function registerForPushNotificationsAsync() {
 
                         {/* Uploaded Images Grid */}
                         {Array.isArray(form.documents.homePics) && form.documents.homePics.length > 0 && (
-                          <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -4 }}>
+                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                             {form.documents.homePics.map((img, idx) => (
-                              <View key={idx} style={{ width: "33.33%", padding: 4 }}>
-                                <View style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
+                              <View key={idx} style={{ width: "30.8%" }}>
+                                <View style={{ borderRadius: 14, overflow: "hidden", position: "relative" }}>
                                   <Image
                                     source={{ uri: img.uri }}
-                                    style={{ width: "100%", aspectRatio: 1, borderRadius: 12 }}
+                                    style={{ width: "100%", aspectRatio: 1 }}
                                     resizeMode="cover"
                                   />
+                                  {/* Dark overlay on image bottom */}
+                                  <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 30, backgroundColor: "rgba(0,0,0,0.3)" }} />
+                                  {/* Remove Button */}
                                   <TouchableOpacity
                                     style={{
-                                      position: "absolute",
-                                      top: 6,
-                                      right: 6,
-                                      backgroundColor: "rgba(0,0,0,0.6)",
-                                      borderRadius: 12,
-                                      width: 24,
-                                      height: 24,
-                                      alignItems: "center",
-                                      justifyContent: "center"
+                                      position: "absolute", top: 5, right: 5,
+                                      backgroundColor: "rgba(239,68,68,0.9)",
+                                      borderRadius: 10, width: 22, height: 22,
+                                      alignItems: "center", justifyContent: "center",
                                     }}
                                     onPress={() => {
                                       const current = form.documents.homePics || [];
@@ -2897,11 +3012,30 @@ async function registerForPushNotificationsAsync() {
                                       setErrors(newErrors);
                                     }}
                                   >
-                                    <Ionicons name="close" size={16} color="#FFF" />
+                                    <Ionicons name="close" size={13} color="#FFF" />
                                   </TouchableOpacity>
+                                  {/* Index label */}
+                                  <View style={{ position: "absolute", bottom: 4, left: 6 }}>
+                                    <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "700" }}>#{idx + 1}</Text>
+                                  </View>
                                 </View>
                               </View>
                             ))}
+                            {/* Add more button */}
+                            {form.documents.homePics.length < 10 && (
+                              <TouchableOpacity
+                                style={{
+                                  width: "30.8%", aspectRatio: 1,
+                                  borderRadius: 14, borderWidth: 2, borderStyle: "dashed",
+                                  borderColor: "#DDD6FE", backgroundColor: "#FAFAFF",
+                                  justifyContent: "center", alignItems: "center",
+                                }}
+                                onPress={() => openImagePicker("homePics")}
+                              >
+                                <Ionicons name="add" size={24} color="#7C3AED" />
+                                <Text style={{ fontSize: 10, color: "#7C3AED", fontWeight: "600", marginTop: 3 }}>Add More</Text>
+                              </TouchableOpacity>
+                            )}
                           </View>
                         )}
                       </View>
@@ -2928,129 +3062,121 @@ async function registerForPushNotificationsAsync() {
                 {step === 2 && (
                   <Step3 form={form} onUpdateFloors={handleUpdateFloors} />
                 )}
-                <View style={[styles.actionBar, { flexDirection: "row", paddingHorizontal: 15, paddingVertical: 12, backgroundColor: "#FFFFFF", borderTopWidth: 1, borderTopColor: "#F3F4F6" }]}>
-                  <TouchableOpacity
-                    style={[styles.btn, { flex: 0.8, marginRight: 15, backgroundColor: "#FFFFFF", borderColor: LIGHT_PURPLE, borderWidth: 1.5, borderRadius: 12, height: 50, justifyContent: "center", alignItems: "center" }]}
-                    onPress={() => {
-                      if (step > 1) {
-                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                        setStep(step - 1);
-                      } else {
-                        navigation.goBack();
-                      }
-                    }}
-                  >
-                    <Text style={{ color: LIGHT_PURPLE, fontWeight: "600", fontSize: 16 }}>{t("back") || "Back"}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.btn, { flex: 1.2, backgroundColor: "#7A3FC4", borderRadius: 12, height: 50, flexDirection: "row", justifyContent: "center", alignItems: "center" }]}
-                    onPress={() => {
-                      if (step < 2) {
-                        next();
-                      } else {
-                        const floors = form.floorsData || [];
-                        if (floors.length < 1) {
-                          Alert.alert(t("error"), t("add_at_least_1_floor"));
-                          return;
+                {/* ===== PREMIUM STICKY BOTTOM ACTION BAR ===== */}
+                <View style={{
+                  paddingHorizontal: 16,
+                  paddingTop: 14,
+                  paddingBottom: Platform.OS === "ios" ? 28 : 18,
+                  backgroundColor: "#FFFFFF",
+                  borderTopWidth: 1,
+                  borderTopColor: "#F0EEFF",
+                  shadowColor: "#7C3AED",
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 12,
+                  elevation: 16,
+                }}>
+                  <View style={{ flexDirection: "row", gap: 10 }}>
+                    {/* Back Button */}
+                    <TouchableOpacity
+                      style={{
+                        flex: 1,
+                        height: 58,
+                        borderRadius: 18,
+                        borderWidth: 2,
+                        borderColor: "#8B5CF6",
+                        backgroundColor: "#FAFAFF",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        flexDirection: "row",
+                        gap: 6,
+                      }}
+                      onPress={() => {
+                        if (step > 1) {
+                          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                          setStep(step - 1);
+                        } else {
+                          navigation.goBack();
                         }
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Ionicons name="arrow-back" size={18} color="#7C3AED" />
+                      <Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: 15 }}>{t("back") || "Back"}</Text>
+                    </TouchableOpacity>
 
-                        // HOSTEL → Rooms required
-                        if (form.stayType === "hostel") {
-                          const totalRooms = floors.reduce(
-                            (sum, floor) =>
-                              sum + (floor.rooms ? floor.rooms.length : 0),
-                            0,
-                          );
-
-                          if (totalRooms < 1) {
-                            Alert.alert(
-                              t("error"),
-                              t("add_at_least_1_room"),
-                            );
+                    {/* Next / Submit Button */}
+                    <TouchableOpacity
+                      style={{ flex: 1, borderRadius: 18, overflow: "hidden",
+                        shadowColor: "#6D28D9", shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
+                      }}
+                      onPress={() => {
+                        if (step < 2) {
+                          next();
+                        } else {
+                          const floors = form.floorsData || [];
+                          if (floors.length < 1) {
+                            Alert.alert(t("error"), t("add_at_least_1_floor"));
                             return;
                           }
-                        }
-
-                        // APARTMENT → Flats required
-                        if (form.stayType === "apartment") {
-                          const totalFlats = floors.reduce(
-                            (sum, floor) =>
-                              sum + (floor.flats ? floor.flats.length : 0),
-                            0,
-                          );
-
-                          if (totalFlats < 1) {
-                            Alert.alert(
-                              t("error"),
-                              t("add_at_least_1_flat"),
-                            );
-                            return;
+                          if (form.stayType === "hostel") {
+                            const totalRooms = floors.reduce((sum, floor) => sum + (floor.rooms ? floor.rooms.length : 0), 0);
+                            if (totalRooms < 1) { Alert.alert(t("error"), t("add_at_least_1_room")); return; }
                           }
-                        }
-
-                        // COMMERCIAL → Sections required
-                        if (form.stayType === "commercial") {
-                          const totalSections = floors.reduce(
-                            (sum, floor) =>
-                              sum + (floor.sections ? floor.sections.length : 0),
-                            0,
-                          );
-
-                          if (totalSections < 1) {
-                            Alert.alert(
-                              t("error"),
-                              t("add_at_least_1_section"),
-                            );
-                            return;
+                          if (form.stayType === "apartment") {
+                            const totalFlats = floors.reduce((sum, floor) => sum + (floor.flats ? floor.flats.length : 0), 0);
+                            if (totalFlats < 1) { Alert.alert(t("error"), t("add_at_least_1_flat")); return; }
                           }
-
-                          for (const floor of floors) {
-                            for (const section of floor.sections || []) {
-                              if (!section.area) {
-                                Alert.alert(
-                                  t("error"),
-                                  `${t("enter_area_sqft").replace("{floor}", floor.floorNo).replace("{section}", section.sectionNo)}`,
-                                );
-                                return;
+                          if (form.stayType === "commercial") {
+                            const totalSections = floors.reduce((sum, floor) => sum + (floor.sections ? floor.sections.length : 0), 0);
+                            if (totalSections < 1) { Alert.alert(t("error"), t("add_at_least_1_section")); return; }
+                            for (const floor of floors) {
+                              for (const section of floor.sections || []) {
+                                if (!section.area) {
+                                  Alert.alert(t("error"), `${t("enter_area_sqft").replace("{floor}", floor.floorNo).replace("{section}", section.sectionNo)}`);
+                                  return;
+                                }
                               }
                             }
                           }
+                          if (!form.name.trim()) { Alert.alert(t("error"), "Please enter Owner Full Name"); return; }
+                          submit();
                         }
-
-                        if (!form.name.trim()) { Alert.alert(t("error"), "Please enter Owner Full Name"); return; }
-                        submit();
-                      }
-                    }}
-                    // style={{ flex: 1.2 }}
-                  >
-                    <LinearGradient
-                      colors={["#8B5CF6", "#6D28D9"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={{
-                        borderRadius: 12,
-                        height: 50,
-                        flexDirection: "row",
-                        justifyContent: "center",
-                        alignItems: "center"
                       }}
+                      activeOpacity={0.88}
                     >
-                      <Text style={{ color: "#fff", fontWeight: "600", fontSize: 16, marginRight: 8 }}>
-                        {step < 2 ? (t("next") || "Next") : (t("submit") || "Submit")}
-                      </Text>
-                      {step < 2 && <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />}
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Footer */}
-                {step < 2 && (
-                  <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 15 }}>
-                    <Ionicons name="lock-closed" size={12} color="#9CA3AF" />
-                    <Text style={{ fontSize: 12, color: "#9CA3AF", marginLeft: 4 }}>Your information is secure and encrypted</Text>
+                      <LinearGradient
+                        colors={["#8B5CF6", "#6D28D9"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{
+                          height: 58,
+                          flexDirection: "row",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: 16, letterSpacing: 0.4 }}>
+                          {step < 2 ? (t("next") || "Next") : (t("submit") || "Submit")}
+                        </Text>
+                        {step < 2
+                          ? <Ionicons name="arrow-forward-circle" size={20} color="rgba(255,255,255,0.9)" />
+                          : <Ionicons name="checkmark-circle" size={20} color="rgba(255,255,255,0.9)" />
+                        }
+                      </LinearGradient>
+                    </TouchableOpacity>
                   </View>
-                )}
+
+                  {/* Security Footer */}
+                  {step < 2 && (
+                    <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 12 }}>
+                      <Ionicons name="shield-checkmark" size={12} color="#A78BFA" />
+                      <Text style={{ fontSize: 11, color: "#A78BFA", marginLeft: 5, fontWeight: "500" }}>256-bit encrypted · Your data is safe</Text>
+                    </View>
+                  )}
+                </View>
                 </View>
                 </TouchableWithoutFeedback>
               </Animated.ScrollView>
@@ -5445,9 +5571,11 @@ const step3Styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: DOT_INACTIVE,
     borderRadius: 12,
-    padding: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 0,
     fontSize: 16,
     color: NAVY,
+    textAlignVertical: "center",
   },
   setBtn: {
     backgroundColor: LIGHT_PURPLE,
@@ -5506,14 +5634,20 @@ const step3Styles = StyleSheet.create({
     marginRight: 4,
   },
   emptyState: {
-    paddingVertical: 60,
+    height: 180,
+    justifyContent: "center",
     alignItems: "center",
     backgroundColor: LIGHT_GRAY,
     borderRadius: 24,
     borderStyle: "dashed",
     borderWidth: 2,
-    borderColor: DOT_INACTIVE,
+    borderColor: LIGHT_PURPLE,
     marginBottom: 20,
+    shadowColor: LIGHT_PURPLE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
   },
   emptyText: {
     color: GRAY,
@@ -5648,9 +5782,14 @@ const step3Styles = StyleSheet.create({
   smallBtnText: { color: LIGHT_PURPLE, fontWeight: "700", fontSize: 12 },
   primaryBtn: {
     backgroundColor: LIGHT_PURPLE,
-    padding: 16,
-    borderRadius: 14,
+    padding: 18,
+    borderRadius: 16,
     alignItems: "center",
+    shadowColor: LIGHT_PURPLE,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
     flex: 1,
   },
   secondaryBtn: {
@@ -5750,70 +5889,77 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: WHITE,
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: LIGHT_PURPLE,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: DOT_INACTIVE,
   },
   card: {
     maxWidth: 720,
-    width: Dimensions.get("window").width - 30,
+    width: Dimensions.get("window").width - 24,
     alignSelf: "center",
     backgroundColor: WHITE,
-    borderRadius: 24,
-    paddingHorizontal: 24,
+    borderRadius: 16,
+    paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 20,
-    marginVertical: 15,
+    marginVertical: 12,
     elevation: 8,
     shadowColor: LIGHT_PURPLE,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.15,
-    shadowRadius: 15,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
     flex: 1,
+    borderWidth: 1,
+    borderColor: DOT_INACTIVE,
   },
   title: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "800",
     textAlign: "center",
     marginBottom: 16,
-    color: LIGHT_PURPLE,
-    letterSpacing: 0.5,
+    color: NAVY,
+    letterSpacing: 0.3,
   },
   input: {
-    color: "#333",
-    fontSize: 16,
-    paddingVertical: 14,
+    color: NAVY,
+    fontSize: 15,
+    paddingVertical: 12,
+    fontWeight: "500",
   },
-  inputError: { borderColor: "#ef4444", borderWidth: 1.5, backgroundColor: "#fef2f2" },
+  inputError: { borderColor: "#EF4444", borderWidth: 1.5, backgroundColor: "#FEF2F2" },
   errorText: {
-    color: "#dc2626",
+    color: "#EF4444",
     fontSize: 12,
-    marginBottom: 10,
-    marginTop: -3,
+    marginBottom: 8,
+    marginTop: -4,
+    fontWeight: "600",
+    marginLeft: 4,
   },
-  btnDisabled: { backgroundColor: LIGHT_PURPLE, opacity: 0.5 },
+  btnDisabled: { backgroundColor: LIGHT_PURPLE, opacity: 0.6 },
   picker: {
-    borderWidth: 1.5,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    marginBottom: 16,
-    color: LIGHT_PURPLE,
+    backgroundColor: "transparent",
+    color: NAVY,
   },
   btn: {
     backgroundColor: LIGHT_PURPLE,
     alignItems: "center",
-    borderRadius: 12,
+    justifyContent: "center",
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 24,
     shadowColor: LIGHT_PURPLE,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+    flex: 1,
   },
   btnText: {
     color: WHITE,
@@ -5821,24 +5967,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     letterSpacing: 0.5,
   },
-  //  walker: {
-  //   position: "absolute",
-  //   top: -2, // Adjust as needed
-  //   left: 10, // Adjust as needed
-  //   zIndex: 1,
-  // },
   actionBar: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: WHITE,
-    borderRadius: 12,
-    padding: 10,
-    marginTop: 16,
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    backgroundColor: "#F8F9FC",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderColor: DOT_INACTIVE,
+    gap: 12,
   },
   stepWrap: {
     flexDirection: "row",
@@ -5926,20 +6063,31 @@ const styles = StyleSheet.create({
   addFloorBtn: {
     marginTop: 20,
     backgroundColor: LIGHT_PURPLE,
-    padding: 14,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
+    shadowColor: LIGHT_PURPLE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   addFloorBtnText: {
     color: WHITE,
-    fontWeight: "bold",
+    fontWeight: "800",
+    fontSize: 16,
   },
   addRoomBtn: {
     backgroundColor: LIGHT_PURPLE,
-    padding: 10,
+    padding: 14,
     borderRadius: 20,
-    marginTop: 5,
+    marginTop: 8,
     alignItems: "center",
+    shadowColor: LIGHT_PURPLE,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   addRoomBtnText: {
     color: WHITE,
@@ -5964,21 +6112,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1.5,
     borderRadius: 12,
-    paddingHorizontal: 14,
-    backgroundColor: "#F9FAFB",
-    borderColor: "#E5E7EB",
-    marginBottom: 16,
+    paddingHorizontal: 12,
+    minHeight: 54,
+    backgroundColor: WHITE,
+    borderColor: DOT_INACTIVE,
+    marginBottom: 12,
     elevation: 1,
-    shadowColor: "#000",
+    shadowColor: NAVY,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
   },
   inputContainerStep2: {
-    borderColor: DOT_INACTIVE, // Light gray border for step 2 inputs
+    borderColor: DOT_INACTIVE,
+    backgroundColor: LIGHT_GRAY,
   },
   inputIcon: {
-    marginRight: 10, // Add some space between icon and text input
+    marginRight: 8,
   },
   passwordToggle: {
     padding: 5,

@@ -80,10 +80,19 @@ class PaymentService:
     def update_payment_status(data):
         txn_ref = data.get('txn_ref')
         status_value = data.get('status')
+        rejection_reason = data.get('rejection_reason')
+        remaining_balance = data.get('remaining_balance', 0.0)
+        next_due_date = data.get('next_due_date')
 
         try:
             payment = Payment.objects.get(txn_ref=txn_ref)
             payment.status = status_value
+            if rejection_reason is not None:
+                payment.rejection_reason = rejection_reason
+            if remaining_balance is not None:
+                payment.remaining_balance = float(remaining_balance)
+            if next_due_date is not None:
+                payment.next_due_date = next_due_date
             payment.save()
         except Payment.DoesNotExist:
             if txn_ref and txn_ref.startswith("PEND-"):
@@ -135,7 +144,10 @@ class PaymentService:
                         txn_ref=txn_ref,
                         status=status_value,
                         property_id=property_id,
-                        property_type=property_type
+                        property_type=property_type,
+                        rejection_reason=rejection_reason,
+                        remaining_balance=float(remaining_balance) if remaining_balance else 0.0,
+                        next_due_date=next_due_date
                     )
                 except Exception as ex:
                     raise Exception(f"Could not create payment from virtual record: {str(ex)}")
@@ -180,15 +192,18 @@ class PaymentService:
                 channel_layer = get_channel_layer()
                 sanitized_tenant = payment.tenant_phone.replace("+", "").replace("@", "_").replace(".", "_")
                 msg_text = f"Your payment for {payment.property_name} has been verified." if status_value == 'SUCCESS' else f"Your payment for {payment.property_name} was declined."
+                if status_value == 'FAILED' and rejection_reason:
+                    msg_text += f" Reason: {rejection_reason}"
                 
                 async_to_sync(channel_layer.group_send)(
                     f"user_notifications_{sanitized_tenant}",
                     {
                         "type": "send_notification",
                         "content": {
-                            "type": "PAYMENT_VERIFIED",
+                            "type": "PAYMENT_VERIFIED" if status_value == 'SUCCESS' else "PAYMENT_REJECTED",
                             "message": msg_text,
-                            "status": status_value
+                            "status": status_value,
+                            "rejection_reason": rejection_reason
                         }
                     }
                 )

@@ -132,7 +132,7 @@ export default function BuildingScreen({ route }) {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 0.8,
     });
@@ -1010,14 +1010,14 @@ export default function BuildingScreen({ route }) {
   //     }
 
   //     const response = await fetch(
-  //       "http://192.168.1.26:8000/api/tenentbeds/",
+  //       "http://192.168.1.161.26:8000/api/tenentbeds/",
   //       {
   //         method: "POST",
   //         body: formData,
   //       }
   //     );
   // const res1 = await fetch(
-  //       "http://192.168.1.26:8000/api/apartmentbeds/",
+  //       "http://192.168.1.161.26:8000/api/apartmentbeds/",
   //        {
   //         method: "POST",
   //         body: formData,

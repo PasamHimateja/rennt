@@ -166,40 +166,11 @@ def admin_login(request):
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
-def forgot_password(request):
-    try:
-        result = AuthService.forgot_password(request.data)
-        return Response(result, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(['POST'])
-def reset_password(request, token):
-    try:
-        result = AuthService.reset_password(token, request.data)
-        return Response(result, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
-def send_otp(request):
-    try:
-        result = AuthService.send_otp(request.data)
-        return Response(result, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(['POST'])
-def verify_otp(request):
-    try:
-        result = AuthService.verify_otp(request.data)
-        return Response(result, status=status.HTTP_200_OK)
-    except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
@@ -215,8 +186,6 @@ def check_user(request, phone):
 def check_owner(request, phone):
     try:
         result = AuthService.check_owner(phone)
-        if result.get("status") in ["pending", "suspend"]:
-            return Response({"error": result.get("error"), "status": result.get("status")}, status=status.HTTP_200_OK)
         return Response(result, status=status.HTTP_200_OK)
     except Exception as e:
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

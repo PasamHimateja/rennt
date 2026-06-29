@@ -1,5 +1,5 @@
 //const BASE_URL = "http://13.126.156.146:8000";
-const BASE_URL = "http://192.168.1.15:8000";
+const BASE_URL = "http://192.168.1.16:8000";
 // WebSocket base URL (safe conversion)
 export const WS_BASE_URL = BASE_URL.replace("http://", "ws://").replace("https://", "wss://");
 

@@ -127,7 +127,7 @@ export default function OwnerLoginScreen({ navigation }) {
           if (userData.exists) {
 
             if (userData.token) await AsyncStorage.setItem("userToken", userData.token);
-            await AsyncStorage.setItem("ownerPhone", userData.user.id);
+            await AsyncStorage.setItem("ownerPhone", String(userData.user.id));
 
             const raw = await AsyncStorage.getItem("loggedInOwnerAccounts");
             let accounts = raw ? JSON.parse(raw) : [];
@@ -138,13 +138,13 @@ export default function OwnerLoginScreen({ navigation }) {
 
             if (userData.status === "pending" || userData.status === "suspend") {
               navigation.replace("WaitingScreen", {
-                phone: userData.user.id,
+                phone: String(userData.user.id),
               });
             } else {
               Alert.alert("Welcome", "Login Successful");
               navigation.reset({
                 index: 0,
-                routes: [{ name: "OwnerNavigation", params: { phone: userData.user.id } }],
+                routes: [{ name: "OwnerNavigation", params: { phone: String(userData.user.id) } }],
               });
             }
 

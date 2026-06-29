@@ -675,14 +675,23 @@ const OwnerPaymentScreen = () => {
     setShowCashPartialModal(true);
   };
 
-  const handleSendMessage = () => {
-    if (customMessage.trim()) {
-      Alert.alert('Message Sent', `Message sent to ${selectedTenant.name}.`);
-      setShowMessageModal(false);
-      setCustomMessage('');
-      setSelectedTenant(null);
+  const handleSendMessage = async () => {
+    if (customMessage.trim() && selectedTenant?.phone) {
+      try {
+        await axios.post(`${BASE_URL}/api/send-tenant-notification/`, {
+          tenantPhone: selectedTenant.phone,
+          title: 'Message from Owner',
+          message: customMessage
+        });
+        Alert.alert('Message Sent', `Message sent to ${selectedTenant.name}.`);
+        setShowMessageModal(false);
+        setCustomMessage('');
+        setSelectedTenant(null);
+      } catch (error) {
+        Alert.alert('Error', 'Failed to send message.');
+      }
     } else {
-      Alert.alert('Error', 'Please enter a message.');
+      Alert.alert('Error', 'Please enter a message and select a valid tenant.');
     }
   };
 
@@ -733,7 +742,8 @@ const OwnerPaymentScreen = () => {
       setLoading(true);
       const response = await axios.post(`${BASE_URL}/api/update-payment/`, {
         txn_ref: txn_ref,
-        status: 'FAILED'
+        status: 'FAILED',
+        rejection_reason: rejectionReason
       });
 
       console.log("Reject Response:", response.data);
@@ -743,7 +753,7 @@ const OwnerPaymentScreen = () => {
         await axios.post(`${BASE_URL}/api/send-tenant-notification/`, {
           tenantPhone: tenantPhone,
           title: 'Payment Rejected',
-          message: `Hi ${tenantName || 'Tenant'}, your payment proof was rejected by the owner. Please check your transaction details and re-upload the screenshot.`
+          message: `Hi ${tenantName || 'Tenant'}, your payment proof was rejected by the owner. Reason: ${rejectionReason || 'No reason provided.'}`
         });
       }
 
@@ -763,6 +773,17 @@ const OwnerPaymentScreen = () => {
   const handleSetReminder = async (proof) => {
     try {
       console.log("Setting partial reminder for:", proof.name);
+
+      if (proof.txn_ref) {
+        setLoading(true);
+        // Persist the remaining balance and due date
+        await axios.post(`${BASE_URL}/api/update-payment/`, {
+          txn_ref: proof.txn_ref,
+          status: 'SUCCESS',
+          remaining_balance: partialPaymentData.remainingBalance,
+          next_due_date: partialPaymentData.remainingDueDate
+        });
+      }
 
       if (proof.tenant_phone) {
         setLoading(true);
@@ -786,7 +807,21 @@ const OwnerPaymentScreen = () => {
     }
   };
 
-  const handleConfirmCashPartial = () => {
+  const handleConfirmCashPartial = async () => {
+    if (selectedTenant?.txn_ref) {
+      try {
+        await axios.post(`${BASE_URL}/api/update-payment/`, {
+          txn_ref: selectedTenant.txn_ref,
+          status: 'SUCCESS',
+          remaining_balance: cashPartialData.remainingBalance,
+          next_due_date: cashPartialData.remainingDueDate
+        });
+        await fetchPayments();
+      } catch (error) {
+        console.log("Error updating partial cash:", error);
+      }
+    }
+
     // Update tenant status to partial paid
     setTenantData(tenantData.map(t =>
       t.id === selectedTenant.id ? { ...t, status: 'partial', paymentMethod: 'Cash', paidDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) } : t
@@ -797,7 +832,6 @@ const OwnerPaymentScreen = () => {
     setShowMessageModal(true);
     // Close the cash partial modal
     setShowCashPartialModal(false);
-    Alert.alert('Success', 'Partial cash payment recorded.');
   };
 
   const filteredTenants = tenantData.filter(tenant => {

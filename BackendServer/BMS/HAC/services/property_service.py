@@ -147,7 +147,9 @@ class PropertyService:
             "status": last_payment.status if last_payment else "Pending",
             "lastPaymentStatus": last_payment.status if last_payment else "Pending",
             "lastPaymentRef": last_payment.txn_ref if last_payment else "",
-            "remaining_balance": 0
+            "remaining_balance": last_payment.remaining_balance if last_payment and hasattr(last_payment, 'remaining_balance') else 0,
+            "next_due_date": last_payment.next_due_date.strftime('%Y-%m-%d') if last_payment and hasattr(last_payment, 'next_due_date') and last_payment.next_due_date else due_date_str,
+            "rejection_reason": last_payment.rejection_reason if last_payment and hasattr(last_payment, 'rejection_reason') else ""
         }
 
     @staticmethod

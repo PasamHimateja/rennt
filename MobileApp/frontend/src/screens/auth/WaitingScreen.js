@@ -339,11 +339,11 @@ export default function WaitingScreen({ navigation, route }) {
         </View>
       ) : (
         <>
-          <Image
+          {/* <Image
             source={require("../../../assets/images/hourglass.png")}
             style={styles.image}
             resizeMode="contain"
-          />
+          /> */}
 
           <Text style={styles.title}>{t("account_under_review") || "Account Under Review"}</Text>
           <Text style={styles.subtitle}>{t("review_time_msg") || "We will get back to you within 2 days"}</Text>

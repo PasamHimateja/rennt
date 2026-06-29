@@ -243,6 +243,21 @@ const TenantPaymentScreen = () => {
         if (!acknowledged && !isBackground) {
           setReminderModalVisible(true);
         }
+      } else if (data?.lastPaymentStatus === 'FAILED' && data?.rejection_reason) {
+        setPaymentReminder({
+          id: `reject_${data.lastPaymentRef}`,
+          title: t('payment_rejected') || 'Payment Rejected',
+          message: `${t('payment_rejected_reason') || 'Your payment was rejected.'} ${t('reason') || 'Reason'}: ${data.rejection_reason}`,
+          type: 'rejection'
+        });
+        
+        // Auto-show rejection if not acknowledged
+        const phone = await AsyncStorage.getItem('tenantPhone');
+        const ackKey = `ack_reminder_${phone}_reject_${data.lastPaymentRef}`;
+        const acknowledged = await AsyncStorage.getItem(ackKey);
+        if (!acknowledged && !isBackground) {
+          setReminderModalVisible(true);
+        }
       } else if (data?.remaining_balance > 0) {
         // Handle pending balance as a system reminder if no explicit payment reminder
         setPaymentReminder({
@@ -516,9 +531,9 @@ const TenantPaymentScreen = () => {
 
     if (paymentData.status === 'Verifying') {
       return {
-        enabled: false,
+        enabled: true,
         message: t('payment verifying msg') || "Payment is being verified",
-        subMessage: t('wait owner confirms') || "Please wait while the owner confirms your payment."
+        subMessage: t('wait owner confirms') || "Please wait while the owner confirms your payment. You can still view or resubmit if required."
       };
     }
 
