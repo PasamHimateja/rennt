@@ -1268,3 +1268,467 @@ def check_admin_password_status(request):
         return Response(data, status=200)
     except ValueError as e:
         return Response({"error": str(e)}, status=400)
+
+
+# =====================================================================
+# BUILDING LAYOUT MANAGEMENT ENDPOINTS
+# =====================================================================
+
+from HAC.models import Property, Owners, StayHostelDetails, ApartmentStayDetails, CommericialDetails, HostelFloorRoom, ApartmentFloorUnit, CommercialFloor
+from HAC.serializers import PropertySerializer
+
+def get_or_create_property_by_phone(owner_phone):
+    """
+    Helper function to find a property by owner_phone. If not found,
+    checks if the owner exists in the Owners table. If they do, checks
+    for any legacy stay details records to determine property type and
+    build layout, creating a new Property record.
+    """
+    if not owner_phone:
+        return None
+
+    # Try finding the Property
+    prop = Property.objects.filter(owner_phone=owner_phone).first()
+    if prop:
+        return prop
+
+    # Look up in Owners table
+    owner = Owners.objects.filter(phone=owner_phone).first()
+    if not owner:
+        return None
+
+    # Determine property type and build layout from legacy tables if they exist
+    property_type = None
+    layout = []
+
+    hostel = StayHostelDetails.objects.filter(owner=owner).first()
+    apartment = ApartmentStayDetails.objects.filter(owner=owner).first()
+    commercial = CommericialDetails.objects.filter(owner=owner).first()
+
+    if hostel:
+        property_type = 'hostel'
+        floors = HostelFloorRoom.objects.filter(hostel=hostel).order_by('floor', 'roomNo')
+        layout_dict = {}
+        for room in floors:
+            floor_no = room.floor
+            if floor_no not in layout_dict:
+                layout_dict[floor_no] = []
+            layout_dict[floor_no].append({"roomNo": room.roomNo, "beds": room.sharing})
+        layout = [{"floorNo": fn, "rooms": rooms} for fn, rooms in layout_dict.items()]
+
+    elif apartment:
+        property_type = 'apartment'
+        floors = ApartmentFloorUnit.objects.filter(apartment=apartment).order_by('floor', 'flatNo')
+        layout_dict = {}
+        for flat in floors:
+            floor_no = flat.floor
+            if floor_no not in layout_dict:
+                layout_dict[floor_no] = []
+            layout_dict[floor_no].append({"flatNo": flat.flatNo, "bhk": flat.bhk})
+        layout = [{"floorNo": fn, "flats": flats} for fn, flats in layout_dict.items()]
+
+    elif commercial:
+        property_type = 'commercial'
+        floors = CommercialFloor.objects.filter(commercial_property=commercial).order_by('floorNo', 'sectionNo')
+        layout_dict = {}
+        for floor in floors:
+            floor_no = floor.floorNo
+            if floor_no not in layout_dict:
+                layout_dict[floor_no] = []
+            layout_dict[floor_no].append({"sectionNo": floor.sectionNo, "area_sqft": floor.area_sqft})
+        layout = [{"floorNo": fn, "sections": secs} for fn, secs in layout_dict.items()]
+
+    if not property_type:
+        return None
+
+    # Create the Property record with imported layout
+    prop = Property.objects.create(
+        owner_phone=owner_phone,
+        property_type=property_type,
+        building_layout=layout
+    )
+    return prop
+
+
+@api_view(["POST"])
+def add_floor(request):
+    """
+    POST /api/building/add-floor/
+    Request: {"owner_phone": "9876543210"}
+    """
+    owner_phone = request.data.get("owner_phone")
+    if not owner_phone:
+        return Response({"status": False, "message": "owner_phone is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        prop = get_or_create_property_by_phone(owner_phone)
+        if not prop:
+            return Response({"status": False, "message": "Property not found for this owner phone"}, status=status.HTTP_404_NOT_FOUND)
+
+        layout = list(prop.building_layout or [])
+        
+        # Calculate next floorNo
+        floor_numbers = [floor.get("floorNo", 0) for floor in layout if isinstance(floor, dict)]
+        next_floor = max(floor_numbers) + 1 if floor_numbers else 1
+
+        # Determine default layout for new floor based on property type
+        if prop.property_type == "hostel":
+            new_floor = {
+                "floorNo": next_floor,
+                "rooms": [{"roomNo": 1, "beds": 1}]
+            }
+        elif prop.property_type == "apartment":
+            new_floor = {
+                "floorNo": next_floor,
+                "flats": [{"flatNo": "101", "bhk": 1}]
+            }
+        elif prop.property_type == "commercial":
+            new_floor = {
+                "floorNo": next_floor,
+                "sections": [{"sectionNo": 1, "area_sqft": 500}]
+            }
+        else:
+            return Response({"status": False, "message": f"Unsupported property type: {prop.property_type}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        layout.append(new_floor)
+
+        # Validate & Save
+        serializer = PropertySerializer(prop, data={"building_layout": layout}, partial=True)
+        if not serializer.is_valid():
+            return Response({"status": False, "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+
+        return Response({
+            "status": True,
+            "message": "Building layout updated successfully",
+            "building_layout": serializer.data["building_layout"]
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(["DELETE"])
+def delete_floor(request, owner_phone, floor_no):
+    """
+    DELETE /api/building/delete-floor/<owner_phone>/<floor_no>/
+    """
+    if not owner_phone or floor_no is None:
+        return Response({"status": False, "message": "owner_phone and floor_no are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        floor_no_val = int(floor_no)
+    except (ValueError, TypeError):
+        return Response({"status": False, "message": "floor_no must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        prop = get_or_create_property_by_phone(owner_phone)
+        if not prop:
+            return Response({"status": False, "message": "Property not found for this owner phone"}, status=status.HTTP_404_NOT_FOUND)
+
+        layout = list(prop.building_layout or [])
+        
+        # Check if floor exists
+        floor_exists = False
+        new_layout = []
+        for floor in layout:
+            if isinstance(floor, dict) and int(floor.get("floorNo", 0)) == floor_no_val:
+                floor_exists = True
+            else:
+                new_layout.append(floor)
+
+        if not floor_exists:
+            return Response({"status": False, "message": f"Floor {floor_no_val} not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Save and return
+        prop.building_layout = new_layout
+        prop.save()
+
+        return Response({
+            "status": True,
+            "message": "Building layout updated successfully",
+            "building_layout": prop.building_layout
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+def add_unit(request):
+    """
+    POST /api/building/add-unit/
+    Request: {"owner_phone": "9876543210", "floor_no": 1}
+    """
+    owner_phone = request.data.get("owner_phone")
+    floor_no = request.data.get("floor_no")
+
+    if not owner_phone or floor_no is None:
+        return Response({"status": False, "message": "owner_phone and floor_no are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        floor_no_val = int(floor_no)
+    except (ValueError, TypeError):
+        return Response({"status": False, "message": "floor_no must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        prop = get_or_create_property_by_phone(owner_phone)
+        if not prop:
+            return Response({"status": False, "message": "Property not found for this owner phone"}, status=status.HTTP_404_NOT_FOUND)
+
+        layout = list(prop.building_layout or [])
+        
+        # Find the floor
+        target_floor = None
+        for floor in layout:
+            if isinstance(floor, dict) and int(floor.get("floorNo", 0)) == floor_no_val:
+                target_floor = floor
+                break
+
+        if not target_floor:
+            return Response({"status": False, "message": f"Floor {floor_no_val} not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Add unit based on property type
+        if prop.property_type == "hostel":
+            rooms = list(target_floor.get("rooms", []))
+            room_numbers = []
+            for r in rooms:
+                try:
+                    room_numbers.append(int(r.get("roomNo", 0)))
+                except (ValueError, TypeError):
+                    pass
+            next_room_no = max(room_numbers) + 1 if room_numbers else 1
+            rooms.append({"roomNo": next_room_no, "beds": 1})
+            target_floor["rooms"] = rooms
+
+        elif prop.property_type == "apartment":
+            flats = list(target_floor.get("flats", []))
+            flat_numbers = []
+            for f in flats:
+                try:
+                    flat_numbers.append(int(f.get("flatNo", 0)))
+                except (ValueError, TypeError):
+                    pass
+            next_flat_no = max(flat_numbers) + 1 if flat_numbers else 101
+            flats.append({"flatNo": str(next_flat_no), "bhk": 1})
+            target_floor["flats"] = flats
+
+        elif prop.property_type == "commercial":
+            sections = list(target_floor.get("sections", []))
+            section_numbers = []
+            for s in sections:
+                try:
+                    section_numbers.append(int(s.get("sectionNo", 0)))
+                except (ValueError, TypeError):
+                    pass
+            next_sec_no = max(section_numbers) + 1 if section_numbers else 1
+            sections.append({"sectionNo": next_sec_no, "area_sqft": 500})
+            target_floor["sections"] = sections
+        else:
+            return Response({"status": False, "message": f"Unsupported property type: {prop.property_type}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate & Save
+        serializer = PropertySerializer(prop, data={"building_layout": layout}, partial=True)
+        if not serializer.is_valid():
+            return Response({"status": False, "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+
+        return Response({
+            "status": True,
+            "message": "Building layout updated successfully",
+            "building_layout": serializer.data["building_layout"]
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(["PATCH"])
+def update_beds(request):
+    """
+    PATCH /api/building/update-beds/
+    Request: {"owner_phone": "9876543210", "floor_no": 1, "room_no": 101, "action": "increment"|"decrement"}
+    """
+    owner_phone = request.data.get("owner_phone")
+    floor_no = request.data.get("floor_no")
+    room_no = request.data.get("room_no")
+    action = request.data.get("action")
+
+    if not owner_phone or floor_no is None or room_no is None or not action:
+        return Response({"status": False, "message": "owner_phone, floor_no, room_no, and action are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    if action not in ["increment", "decrement"]:
+        return Response({"status": False, "message": "action must be 'increment' or 'decrement'"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        floor_no_val = int(floor_no)
+    except (ValueError, TypeError):
+        return Response({"status": False, "message": "floor_no must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        prop = get_or_create_property_by_phone(owner_phone)
+        if not prop:
+            return Response({"status": False, "message": "Property not found for this owner phone"}, status=status.HTTP_404_NOT_FOUND)
+
+        if prop.property_type != "hostel":
+            return Response({"status": False, "message": "Beds update is only supported for hostels"}, status=status.HTTP_400_BAD_REQUEST)
+
+        layout = list(prop.building_layout or [])
+        
+        # Find the floor
+        target_floor = None
+        for floor in layout:
+            if isinstance(floor, dict) and int(floor.get("floorNo", 0)) == floor_no_val:
+                target_floor = floor
+                break
+
+        if not target_floor:
+            return Response({"status": False, "message": f"Floor {floor_no_val} not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Find the room
+        rooms = list(target_floor.get("rooms", []))
+        target_room = None
+        for room in rooms:
+            if isinstance(room, dict) and str(room.get("roomNo", "")).strip() == str(room_no).strip():
+                target_room = room
+                break
+
+        if not target_room:
+            return Response({"status": False, "message": f"Room {room_no} not found on Floor {floor_no_val}"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Update beds count
+        try:
+            current_beds = int(target_room.get("beds", 1))
+        except (ValueError, TypeError):
+            current_beds = 1
+
+        if action == "increment":
+            new_beds = current_beds + 1
+        else:
+            new_beds = current_beds - 1
+
+        if new_beds < 1:
+            return Response({"status": False, "message": "beds cannot be less than 1"}, status=status.HTTP_400_BAD_REQUEST)
+
+        target_room["beds"] = new_beds
+        target_floor["rooms"] = rooms
+
+        # Validate & Save
+        serializer = PropertySerializer(prop, data={"building_layout": layout}, partial=True)
+        if not serializer.is_valid():
+            return Response({"status": False, "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+
+        return Response({
+            "status": True,
+            "message": "Building layout updated successfully",
+            "building_layout": serializer.data["building_layout"]
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(["DELETE"])
+def delete_unit(request):
+    """
+    DELETE /api/building/delete-unit/
+    Request: {"owner_phone": "9876543210", "floor_no": 1, "unit_no": "101"}
+    """
+    owner_phone = request.data.get("owner_phone")
+    floor_no = request.data.get("floor_no")
+    unit_no = request.data.get("unit_no")
+
+    if not owner_phone or floor_no is None or unit_no is None:
+        return Response({"status": False, "message": "owner_phone, floor_no, and unit_no are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        floor_no_val = int(floor_no)
+    except (ValueError, TypeError):
+        return Response({"status": False, "message": "floor_no must be an integer"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        prop = get_or_create_property_by_phone(owner_phone)
+        if not prop:
+            return Response({"status": False, "message": "Property not found for this owner phone"}, status=status.HTTP_404_NOT_FOUND)
+
+        layout = list(prop.building_layout or [])
+        
+        # Find the floor
+        target_floor = None
+        for floor in layout:
+            if isinstance(floor, dict) and int(floor.get("floorNo", 0)) == floor_no_val:
+                target_floor = floor
+                break
+
+        if not target_floor:
+            return Response({"status": False, "message": f"Floor {floor_no_val} not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        unit_exists = False
+        unit_no_str = str(unit_no).strip()
+
+        # Remove unit based on property type
+        if prop.property_type == "hostel":
+            rooms = list(target_floor.get("rooms", []))
+            new_rooms = []
+            for r in rooms:
+                if isinstance(r, dict) and str(r.get("roomNo", "")).strip() == unit_no_str:
+                    unit_exists = True
+                else:
+                    new_rooms.append(r)
+            target_floor["rooms"] = new_rooms
+
+        elif prop.property_type == "apartment":
+            flats = list(target_floor.get("flats", []))
+            new_flats = []
+            for f in flats:
+                if isinstance(f, dict) and str(f.get("flatNo", "")).strip() == unit_no_str:
+                    unit_exists = True
+                else:
+                    new_flats.append(f)
+            target_floor["flats"] = new_flats
+
+        elif prop.property_type == "commercial":
+            sections = list(target_floor.get("sections", []))
+            new_sections = []
+            for s in sections:
+                if isinstance(s, dict) and str(s.get("sectionNo", "")).strip() == unit_no_str:
+                    unit_exists = True
+                else:
+                    new_sections.append(s)
+            target_floor["sections"] = new_sections
+        else:
+            return Response({"status": False, "message": f"Unsupported property type: {prop.property_type}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not unit_exists:
+            return Response({"status": False, "message": f"Unit {unit_no_str} not found on Floor {floor_no_val}"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate & Save
+        serializer = PropertySerializer(prop, data={"building_layout": layout}, partial=True)
+        if not serializer.is_valid():
+            return Response({"status": False, "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+
+        return Response({
+            "status": True,
+            "message": "Building layout updated successfully",
+            "building_layout": serializer.data["building_layout"]
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(["PUT"])
+def save_layout(request):
+    """
+    PUT /api/building/save-layout/
+    Request: {"owner_phone": "9876543210", "building_layout": [...]}
+    """
+    owner_phone = request.data.get("owner_phone")
+    building_layout = request.data.get("building_layout")
+
+    if not owner_phone or building_layout is None:
+        return Response({"status": False, "message": "owner_phone and building_layout are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        prop = get_or_create_property_by_phone(owner_phone)
+        if not prop:
+            return Response({"status": False, "message": "Property not found for this owner phone"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validate & Save
+        serializer = PropertySerializer(prop, data={"building_layout": building_layout}, partial=True)
+        if not serializer.is_valid():
+            return Response({"status": False, "message": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+
+        return Response({
+            "status": True,
+            "message": "Building layout updated successfully",
+            "building_layout": serializer.data["building_layout"]
+        }, status=status.HTTP_200_OK)

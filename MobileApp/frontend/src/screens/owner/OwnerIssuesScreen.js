@@ -642,11 +642,19 @@ const SummaryCard = ({ label, count, color, isActive }) => (
       styles.summaryCard,
       {
         borderColor: color,
-        borderWidth: 1.5,
-        backgroundColor: isActive ? color : `${color}15`,
+        borderWidth: isActive ? 2 : 1.5,
+        backgroundColor: isActive ? color : `${color}22`,
       },
     ]}
   >
+    <Text
+      style={[
+        styles.summaryCount,
+        { color: isActive ? "#FFF" : color },
+      ]}
+    >
+      {count}
+    </Text>
     <Text
       style={[
         styles.summaryLabel,
@@ -655,7 +663,7 @@ const SummaryCard = ({ label, count, color, isActive }) => (
       numberOfLines={1}
       adjustsFontSizeToFit
     >
-      {label} ({count})
+      {label}
     </Text>
   </View>
 );
@@ -724,7 +732,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 10,
-    marginTop: 0,
+    marginTop: 4,
     color: COLORS.TEXT_PRIMARY,
     paddingHorizontal: 16,
   },
@@ -939,29 +947,30 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 47,
     paddingHorizontal: 12,
-    gap: 6,
+    gap: 8,
   },
 
   summaryCard: {
     flex: 1,
-    borderRadius: 24,
-    paddingVertical: 10,
-    paddingHorizontal: 2,
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 40,
+    minHeight: 72,
   },
 
   summaryCount: {
     fontSize: 26,
     fontWeight: "800",
+    marginBottom: 4,
   },
 
   summaryLabel: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "600",
     textAlign: "center",
   },
 

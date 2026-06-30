@@ -7,6 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -216,7 +217,7 @@ const handleResendOTP = () => {
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={WHITE} translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor="#EDE9FE" translucent={false} />
 
       <ImageBackground
         source={require("../../../assets/images/starting.png")}
@@ -233,7 +234,11 @@ const handleResendOTP = () => {
           {/* ── TOP HEADER ── */}
           <View style={styles.headerContainer}>
             <View style={styles.headerIconCircle}>
-              <Ionicons name="business" size={36} color={NAVY} />
+              <Image
+                source={require("../../../assets/images/rent2.png")}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.headerTitle}>Welcome Owner</Text>
             <Text style={styles.headerSubtitle}>
@@ -411,9 +416,9 @@ const styles = StyleSheet.create({
   },
 
   headerIconCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     backgroundColor: "#EDE9FE",
     justifyContent: "center",
     alignItems: "center",
@@ -423,6 +428,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
+    overflow: "hidden",
+  },
+
+  logoImage: {
+    width: 64,
+    height: 64,
   },
 
   headerTitle: {

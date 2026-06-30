@@ -337,9 +337,9 @@ export default function TenantProfile({ navigation }) {
           style={styles.header}
         >
           <View style={styles.headerTopRow}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.headerBtn, { alignSelf: 'flex-start' }]}>
+            {/* <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.headerBtn, { alignSelf: 'flex-start' }]}>
               <Ionicons name="arrow-back" size={24} color="#5B21B6" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <View style={{ flex: 1 }} />
           </View>
 

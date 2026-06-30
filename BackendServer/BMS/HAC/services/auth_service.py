@@ -327,7 +327,7 @@ class AuthService:
  
         raise ValueError("Invalid role")
 
-    ADMIN_PHONE = "6281808454"
+    ADMIN_PHONE = "7386928105"
 
     @staticmethod
     def send_admin_otp(phone):

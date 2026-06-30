@@ -327,9 +327,9 @@ export default function IssuesScreen() {
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.headerLeftContainer}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          {/* <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.TEXT_PRIMARY} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           <View>
             <Text style={[styles.headerTitle, { textTransform: 'lowercase' }]}>{t('Issues')}</Text>
           </View>

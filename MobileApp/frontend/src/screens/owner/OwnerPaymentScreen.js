@@ -675,8 +675,10 @@ const OwnerPaymentScreen = () => {
     setShowCashPartialModal(true);
   };
 
+
+  
   const handleSendMessage = async () => {
-    if (customMessage.trim() && selectedTenant?.phone) {
+    if (customMessage.trim() && selectedTenant?.tenant_phone) {
       try {
         await axios.post(`${BASE_URL}/api/send-tenant-notification/`, {
           tenantPhone: selectedTenant.phone,

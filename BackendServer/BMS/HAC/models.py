@@ -523,3 +523,25 @@ class AdminPassword(models.Model):
     def __str__(self):
         return self.phone
  
+
+class Property(models.Model):
+    owner_phone = models.CharField(max_length=15, unique=True, db_index=True)
+    property_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('hostel', 'Hostel'),
+            ('apartment', 'Apartment'),
+            ('commercial', 'Commercial'),
+        ]
+    )
+    building_layout = models.JSONField(default=list)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Property"
+        verbose_name_plural = "Properties"
+
+    def __str__(self):
+        return f"{self.owner_phone} - {self.property_type}"

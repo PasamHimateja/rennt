@@ -186,6 +186,14 @@ urlpatterns = [
     views.check_admin_password_status,
     name='check_admin_password_status'
     ),
+
+    # Building Layout Endpoints
+    path('building/add-floor/', views.add_floor, name='add_floor'),
+    path('building/delete-floor/<str:owner_phone>/<int:floor_no>/', views.delete_floor, name='delete_floor'),
+    path('building/add-unit/', views.add_unit, name='add_unit'),
+    path('building/update-beds/', views.update_beds, name='update_beds'),
+    path('building/delete-unit/', views.delete_unit, name='delete_unit'),
+    path('building/save-layout/', views.save_layout, name='save_layout'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

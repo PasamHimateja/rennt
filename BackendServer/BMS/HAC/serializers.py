@@ -12,6 +12,7 @@ from .models import (
     TenantBeds,ApartmentTenantBeds,CommercialTenantBeds,JoinRequest,Issue,Payment,
     Expense,
     BlockedTenant,
+    Property,
 )
 
 # ----------------------------
@@ -343,4 +344,147 @@ class BlockedTenantSerializer(serializers.ModelSerializer):
     class Meta:
         model = BlockedTenant
         fields = '__all__'
+
+
+class PropertySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Property
+        fields = ['id', 'owner_phone', 'property_type', 'building_layout']
+
+    def validate_owner_phone(self, value):
+        if not value:
+            raise serializers.ValidationError("owner_phone is required")
+        return value
+
+    def validate(self, data):
+        property_type = data.get('property_type')
+        if not property_type and self.instance:
+            property_type = self.instance.property_type
+            
+        building_layout = data.get('building_layout')
+        if building_layout is not None:
+            if property_type is None:
+                raise serializers.ValidationError("property_type is required to validate building_layout")
+            
+            if not isinstance(building_layout, list):
+                raise serializers.ValidationError({"building_layout": "building_layout must be a list"})
+            
+            seen_floors = set()
+            for floor_idx, floor in enumerate(building_layout):
+                if not isinstance(floor, dict):
+                    raise serializers.ValidationError({"building_layout": f"Floor at index {floor_idx} must be a dictionary"})
+                
+                floor_no = floor.get("floorNo")
+                if floor_no is None:
+                    raise serializers.ValidationError({"building_layout": f"Floor at index {floor_idx} is missing 'floorNo'"})
+                
+                try:
+                    floor_no_val = int(floor_no)
+                except (ValueError, TypeError):
+                    raise serializers.ValidationError({"building_layout": f"Floor number '{floor_no}' must be an integer"})
+                    
+                if floor_no_val in seen_floors:
+                    raise serializers.ValidationError({"building_layout": f"Duplicate floor number: {floor_no_val}"})
+                seen_floors.add(floor_no_val)
+                
+                if property_type == "hostel":
+                    rooms = floor.get("rooms")
+                    if rooms is None:
+                        raise serializers.ValidationError({"building_layout": f"Floor {floor_no_val} is missing 'rooms' list"})
+                    if not isinstance(rooms, list):
+                        raise serializers.ValidationError({"building_layout": f"Floor {floor_no_val} 'rooms' must be a list"})
+                    seen_rooms = set()
+                    for room_idx, room in enumerate(rooms):
+                        if not isinstance(room, dict):
+                            raise serializers.ValidationError({"building_layout": f"Room at index {room_idx} on Floor {floor_no_val} must be a dictionary"})
+                        
+                        room_no = room.get("roomNo")
+                        if room_no is None:
+                            raise serializers.ValidationError({"building_layout": f"Room at index {room_idx} on Floor {floor_no_val} is missing 'roomNo'"})
+                        
+                        room_no_str = str(room_no).strip()
+                        if not room_no_str:
+                            raise serializers.ValidationError({"building_layout": f"Room number cannot be empty on Floor {floor_no_val}"})
+                        if room_no_str in seen_rooms:
+                            raise serializers.ValidationError({"building_layout": f"Duplicate room number '{room_no}' on Floor {floor_no_val}"})
+                        seen_rooms.add(room_no_str)
+                        
+                        beds = room.get("beds")
+                        if beds is None:
+                            raise serializers.ValidationError({"building_layout": f"Room '{room_no}' on Floor {floor_no_val} is missing 'beds'"})
+                        try:
+                            beds_val = int(beds)
+                        except (ValueError, TypeError):
+                            raise serializers.ValidationError({"building_layout": f"Beds count '{beds}' in room '{room_no}' on Floor {floor_no_val} must be an integer"})
+                        if beds_val < 1:
+                            raise serializers.ValidationError({"building_layout": f"Beds count in room '{room_no}' on Floor {floor_no_val} cannot be less than 1"})
+                            
+                elif property_type == "apartment":
+                    flats = floor.get("flats")
+                    if flats is None:
+                        raise serializers.ValidationError({"building_layout": f"Floor {floor_no_val} is missing 'flats' list"})
+                    if not isinstance(flats, list):
+                        raise serializers.ValidationError({"building_layout": f"Floor {floor_no_val} 'flats' must be a list"})
+                    seen_flats = set()
+                    for flat_idx, flat in enumerate(flats):
+                        if not isinstance(flat, dict):
+                            raise serializers.ValidationError({"building_layout": f"Flat at index {flat_idx} on Floor {floor_no_val} must be a dictionary"})
+                        
+                        flat_no = flat.get("flatNo")
+                        if flat_no is None:
+                            raise serializers.ValidationError({"building_layout": f"Flat at index {flat_idx} on Floor {floor_no_val} is missing 'flatNo'"})
+                        
+                        flat_no_str = str(flat_no).strip()
+                        if not flat_no_str:
+                            raise serializers.ValidationError({"building_layout": f"Flat number cannot be empty on Floor {floor_no_val}"})
+                        if flat_no_str in seen_flats:
+                            raise serializers.ValidationError({"building_layout": f"Duplicate flat number '{flat_no}' on Floor {floor_no_val}"})
+                        seen_flats.add(flat_no_str)
+                        
+                        bhk = flat.get("bhk")
+                        if bhk is None:
+                            raise serializers.ValidationError({"building_layout": f"Flat '{flat_no}' on Floor {floor_no_val} is missing 'bhk'"})
+                        try:
+                            bhk_val = int(bhk)
+                        except (ValueError, TypeError):
+                            raise serializers.ValidationError({"building_layout": f"Bhk count '{bhk}' in flat '{flat_no}' on Floor {floor_no_val} must be an integer"})
+                        if bhk_val < 1:
+                            raise serializers.ValidationError({"building_layout": f"Bhk count in flat '{flat_no}' on Floor {floor_no_val} cannot be less than 1"})
+                            
+                elif property_type == "commercial":
+                    sections = floor.get("sections")
+                    if sections is None:
+                        raise serializers.ValidationError({"building_layout": f"Floor {floor_no_val} is missing 'sections' list"})
+                    if not isinstance(sections, list):
+                        raise serializers.ValidationError({"building_layout": f"Floor {floor_no_val} 'sections' must be a list"})
+                    seen_sections = set()
+                    for sec_idx, section in enumerate(sections):
+                        if not isinstance(section, dict):
+                            raise serializers.ValidationError({"building_layout": f"Section at index {sec_idx} on Floor {floor_no_val} must be a dictionary"})
+                        
+                        section_no = section.get("sectionNo")
+                        if section_no is None:
+                            raise serializers.ValidationError({"building_layout": f"Section at index {sec_idx} on Floor {floor_no_val} is missing 'sectionNo'"})
+                        
+                        section_no_str = str(section_no).strip()
+                        if not section_no_str:
+                            raise serializers.ValidationError({"building_layout": f"Section number cannot be empty on Floor {floor_no_val}"})
+                        if section_no_str in seen_sections:
+                            raise serializers.ValidationError({"building_layout": f"Duplicate section number '{section_no}' on Floor {floor_no_val}"})
+                        seen_sections.add(section_no_str)
+                        
+                        area_sqft = section.get("area_sqft")
+                        if area_sqft is None:
+                            raise serializers.ValidationError({"building_layout": f"Section '{section_no}' on Floor {floor_no_val} is missing 'area_sqft'"})
+                        try:
+                            area_val = float(area_sqft)
+                        except (ValueError, TypeError):
+                            raise serializers.ValidationError({"building_layout": f"area_sqft '{area_sqft}' in section '{section_no}' on Floor {floor_no_val} must be a number"})
+                        if area_val <= 0:
+                            raise serializers.ValidationError({"building_layout": f"area_sqft in section '{section_no}' on Floor {floor_no_val} must be greater than 0"})
+                else:
+                    raise serializers.ValidationError({"property_type": "Invalid property type"})
+        
+        return data
+
 
