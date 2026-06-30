@@ -18,7 +18,7 @@ import TenantNotificationScreen from "../screens/tenant/TenantNotificationScreen
 import TenantPaymentHistoryScreen from "../screens/tenant/TenantPaymentHistoryScreen";
 // import ForgetPasswordScreen from "../screens/auth/ForgetPasswordScreen";
 import WaitingScreen from "../screens/auth/WaitingScreen";
-import ResetPasswordScreen from "../screens/auth/ResetPasswordScreen";
+
  
 import TenantHomeScreen from "../screens/tenant/TenantHomeScreen";
 import TenantIssuesScreen from "../screens/tenant/TenantIssuesScreen";
@@ -45,7 +45,7 @@ export default function MainNavigator() {
       <Stack.Screen name="OwnerLoginScreen" component={OwnerLoginScreen} />
      {/* <Stack.Screen name="Loading" component={LoadingScreen} /> */}
 {/* <Stack.Screen name="ForgetPasswordScreen" component={ForgetPasswordScreen}/> */}
-<Stack.Screen name="ResetPasswordScreen" component={ResetPasswordScreen}/>
+
       <Stack.Screen name="WaitingScreen" component={WaitingScreen} />
       <Stack.Screen
         name="TenantRegisterScreen"

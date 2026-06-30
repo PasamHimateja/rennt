@@ -1,396 +1,420 @@
-import { useEffect, useRef } from "react";
-import {
-  View,
-  Dimensions,
-  Image,
-  ImageBackground,
-  StatusBar,
-  StyleSheet,
-} from "react-native";
-
+import React, { useEffect } from "react";
+import { StyleSheet, Dimensions, StatusBar } from "react-native";
 import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withDelay,
+  withTiming,
+  withSequence,
+  withSpring,
   Easing,
   runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withTiming,
 } from "react-native-reanimated";
+import { Image } from "expo-image";
+import Svg, { Defs, RadialGradient, LinearGradient, Stop, Circle, Mask, Image as SvgImage, Rect, G } from "react-native-svg";
 
+const LOGO_SOURCE = require("../../assets/images/EnhancedImage1.png");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const { width, height } = Dimensions.get("window");
+// --- Sizing and Proportions ---
+const LOGO_SIZE = Math.min(SCREEN_WIDTH * 0.65, 260);
+const SCALE_FACTOR = LOGO_SIZE / 3000;
 
-// ── Floating particle dot ──────────────────────────────────────────────────
-function Particle({ delay, startX, duration, size, opacity }) {
-  const translateY = useSharedValue(0);
-  const fadeVal = useSharedValue(0);
+const ROOF_TOP = 478 * SCALE_FACTOR;
+const ROOF_HEIGHT = (1192 - 478) * SCALE_FACTOR;
 
-  useEffect(() => {
-    fadeVal.value = withDelay(
-      delay,
-      withSequence(
-        withTiming(opacity, { duration: 600 }),
-        withDelay(
-          duration - 1200,
-          withTiming(0, { duration: 600 })
-        )
-      )
-    );
+const HOUSE_TOP = 1192 * SCALE_FACTOR;
+const HOUSE_HEIGHT = (1787 - 1192) * SCALE_FACTOR;
 
-    translateY.value = withDelay(
-      delay,
-      withTiming(-height * 0.55, { duration, easing: Easing.linear })
-    );
-  }, []);
+const TEXT_TOP = 1865 * SCALE_FACTOR;
+const TEXT_HEIGHT = (2126 - 1865) * SCALE_FACTOR;
 
-  const style = useAnimatedStyle(() => ({
-    opacity: fadeVal.value,
-    transform: [{ translateY: translateY.value }],
-  }));
+const LOGO_CONTENT_HEIGHT = (2126 - 478) * SCALE_FACTOR;
+const GLOW_SIZE = SCREEN_WIDTH * 1.3;
 
-  return (
-    <Animated.View
-      style={[
-        styles.particle,
-        {
-          left: startX,
-          bottom: height * 0.1,
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor: "rgba(255,255,255,0.9)",
-        },
-        style,
-      ]}
-    />
-  );
-}
+const AnimatedG = Animated.createAnimatedComponent(G);
 
-// ── Shimmer ring ───────────────────────────────────────────────────────────
-function GlowRing({ delay, ringSize, duration }) {
-  const scale = useSharedValue(0.4);
-  const opacity = useSharedValue(0.6);
-
-  useEffect(() => {
-    scale.value = withDelay(
-      delay,
-      withRepeat(
-        withTiming(1.6, { duration, easing: Easing.linear }),
-        -1,
-        false
-      )
-    );
-    opacity.value = withDelay(
-      delay,
-      withRepeat(
-        withTiming(0, { duration, easing: Easing.linear }),
-        -1,
-        false
-      )
-    );
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ scale: scale.value }],
-  }));
+// --- Sub-component: Radial Glow Background ---
+function GlowEffect({ opacity, scale }) {
+  const glowStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ scale: scale.value }],
+    };
+  });
 
   return (
-    <Animated.View
-      style={[
-        styles.glowRing,
-        { width: ringSize, height: ringSize, borderRadius: ringSize / 2 },
-        style,
-      ]}
-    />
-  );
-}
-
-// ── Main SplashScreen ──────────────────────────────────────────────────────
-export default function SplashScreen({ onFinish }) {
-  // Logo: pure fade-in, no scale jump
-  const logoOpacity = useSharedValue(0);
-  const logoBrightness = useSharedValue(0); // used via opacity on a white overlay
-
-  // Soft breathe — very subtle translateY (±4px), NOT scale
-  const breathe = useSharedValue(0);
-
-  // Shimmer sweep across logo
-  const shimmerX = useSharedValue(-220);
-
-  // Text
-  const subtitleOpacity = useSharedValue(0);
-  const subtitleY = useSharedValue(12);
-  const bottomOpacity = useSharedValue(0);
-
-  // Screen exit
-  const screenOpacity = useSharedValue(1);
-
-  const particles = [
-    { delay: 800, startX: width * 0.15, duration: 4000, size: 4, opacity: 0.7 },
-    { delay: 1200, startX: width * 0.3, duration: 5000, size: 3, opacity: 0.5 },
-    { delay: 600, startX: width * 0.5, duration: 3800, size: 5, opacity: 0.6 },
-    { delay: 1500, startX: width * 0.65, duration: 4500, size: 3, opacity: 0.4 },
-    { delay: 900, startX: width * 0.8, duration: 4200, size: 4, opacity: 0.65 },
-    { delay: 300, startX: width * 0.42, duration: 5200, size: 2, opacity: 0.5 },
-    { delay: 1800, startX: width * 0.22, duration: 3600, size: 6, opacity: 0.35 },
-    { delay: 2100, startX: width * 0.72, duration: 4800, size: 3, opacity: 0.55 },
-  ];
-
-  useEffect(() => {
-    // 1. Logo fade in — smooth, no pop
-    logoOpacity.value = withTiming(1, {
-      duration: 1200,
-      easing: Easing.out(Easing.cubic),
-    });
-
-    // 2. Shimmer sweep across logo (starts after fade)
-    shimmerX.value = withDelay(
-      1300,
-      withRepeat(
-        withTiming(220, {
-          duration: 1600,
-          easing: Easing.inOut(Easing.quad),
-        }),
-        -1,
-        false
-      )
-    );
-
-    // 3. Gentle breathe — translateY only, very subtle
-    breathe.value = withDelay(
-      1400,
-      withRepeat(
-        withSequence(
-          withTiming(-5, { duration: 2200, easing: Easing.linear }),
-          withTiming(5, { duration: 2200, easing: Easing.linear })
-        ),
-        -1,
-        true
-      )
-    );
-
-    // 4. Subtitle slides up + fades in
-    subtitleOpacity.value = withDelay(1400, withTiming(1, { duration: 700 }));
-    subtitleY.value = withDelay(
-      1400,
-      withTiming(0, { duration: 700, easing: Easing.linear })
-    );
-
-    // 5. Bottom text
-    bottomOpacity.value = withDelay(2000, withTiming(1, { duration: 800 }));
-
-    // 6. Exit
-    screenOpacity.value = withDelay(
-      4500,
-      withTiming(0, { duration: 900 }, (finished) => {
-        if (finished && onFinish) runOnJS(onFinish)();
-      })
-    );
-  }, []);
-
-  const logoStyle = useAnimatedStyle(() => ({
-    opacity: logoOpacity.value,
-    transform: [{ translateY: breathe.value }],
-  }));
-
-  const shimmerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shimmerX.value }],
-  }));
-
-  const subtitleStyle = useAnimatedStyle(() => ({
-    opacity: subtitleOpacity.value,
-    transform: [{ translateY: subtitleY.value }],
-  }));
-
-  const bottomStyle = useAnimatedStyle(() => ({
-    opacity: bottomOpacity.value,
-  }));
-
-  const screenStyle = useAnimatedStyle(() => ({
-    opacity: screenOpacity.value,
-  }));
-
-  return (
-    <Animated.View style={[styles.wrapper, screenStyle]}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-
-      <ImageBackground
-        source={require("../../assets/images/starting.png")}
-        style={styles.background}
-        resizeMode="cover"
-      >
-        {/* Dark scrim for contrast */}
-        <View style={styles.scrim} />
-
-        {/* Floating particles */}
-        {particles.map((p, i) => (
-          <Particle key={i} {...p} />
-        ))}
-
-        {/* Centre content */}
-        <View style={styles.center}>
-
-          {/* Glow rings behind logo */}
-          <View style={styles.ringContainer}>
-            <GlowRing delay={1400} ringSize={220} duration={2800} />
-            <GlowRing delay={2000} ringSize={220} duration={2800} />
-          </View>
-
-          {/* Logo with shimmer overlay */}
-          <Animated.View style={[styles.logoWrapper, logoStyle]}>
-            <Image
-              source={require("../../assets/images/RenntoLogo.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-
-            {/* Shimmer sweep */}
-            <View style={styles.shimmerClip} pointerEvents="none">
-              <Animated.View style={[styles.shimmerBar, shimmerStyle]} />
-            </View>
-          </Animated.View>
-
-
-          {/* Tagline */}
-          <Animated.Text style={[styles.tagline, subtitleStyle]}>
-            SMART RENTAL APP
-          </Animated.Text>
-
-
-        </View>
-
-        {/* Bottom strip */}
-        <Animated.Text style={[styles.bottomText, bottomStyle]}>
-          Secure Rentals · Easy Booking · Trusted Stays
-        </Animated.Text>
-      </ImageBackground>
+    <Animated.View style={[styles.glowContainer, glowStyle]} pointerEvents="none">
+      <Svg width={GLOW_SIZE} height={GLOW_SIZE}>
+        <Defs>
+          <RadialGradient
+            id="purple-glow"
+            cx="50%"
+            cy="50%"
+            rx="50%"
+            ry="50%"
+            fx="50%"
+            fy="50%"
+          >
+            <Stop offset="0%" stopColor="#A855F7" stopOpacity="0.85" />
+            <Stop offset="35%" stopColor="#A855F7" stopOpacity="0.4" />
+            <Stop offset="70%" stopColor="#A855F7" stopOpacity="0.1" />
+            <Stop offset="100%" stopColor="#A855F7" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Circle
+          cx={GLOW_SIZE / 2}
+          cy={GLOW_SIZE / 2}
+          r={GLOW_SIZE / 2}
+          fill="url(#purple-glow)"
+        />
+      </Svg>
     </Animated.View>
   );
 }
 
-const LOGO_SIZE = 180;
+// --- Sub-component: Cropped Logo Segment Layers ---
+function LogoLayers({ roofStyle, houseStyle, textStyle }) {
+  return (
+    <>
+      {/* 1. ROOF LAYER */}
+      <Animated.View
+        style={[
+          styles.layerWrapper,
+          {
+            top: 0,
+            height: ROOF_HEIGHT,
+          },
+          roofStyle,
+        ]}
+      >
+        <Image
+          source={LOGO_SOURCE}
+          style={[styles.imageStyle, { top: -ROOF_TOP }]}
+        />
+      </Animated.View>
 
+      {/* 2. HOUSE BODY LAYER */}
+      <Animated.View
+        style={[
+          styles.layerWrapper,
+          {
+            top: HOUSE_TOP - ROOF_TOP,
+            height: HOUSE_HEIGHT,
+          },
+          houseStyle,
+        ]}
+      >
+        <Image
+          source={LOGO_SOURCE}
+          style={[styles.imageStyle, { top: -HOUSE_TOP }]}
+        />
+      </Animated.View>
+
+      {/* 3. TEXT LAYER */}
+      <Animated.View
+        style={[
+          styles.layerWrapper,
+          {
+            top: TEXT_TOP - ROOF_TOP,
+            height: TEXT_HEIGHT,
+          },
+          textStyle,
+        ]}
+      >
+        <Image
+          source={LOGO_SOURCE}
+          style={[styles.imageStyle, { top: -TEXT_TOP }]}
+        />
+      </Animated.View>
+    </>
+  );
+}
+
+// --- Sub-component: Diagonal Glass Sweep ---
+function LightSweep({ sweepX, opacity }) {
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [
+        { translateX: sweepX.value },
+        { rotate: "-25deg" },
+      ],
+    };
+  });
+
+  return (
+    <Svg
+      width={LOGO_SIZE}
+      height={LOGO_CONTENT_HEIGHT}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    >
+      <Defs>
+        <LinearGradient id="sweep-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
+          <Stop offset="30%" stopColor="#FFFFFF" stopOpacity="0.08" />
+          <Stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.25" />
+          <Stop offset="70%" stopColor="#FFFFFF" stopOpacity="0.08" />
+          <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+        </LinearGradient>
+
+        <Mask id="logo-mask">
+          <SvgImage
+            href={LOGO_SOURCE}
+            x="0"
+            y={-ROOF_TOP}
+            width={LOGO_SIZE}
+            height={LOGO_SIZE}
+            preserveAspectRatio="xMidYMid meet"
+          />
+        </Mask>
+      </Defs>
+
+      <AnimatedG mask="url(#logo-mask)" style={animatedStyle}>
+        <Rect
+          x={-60}
+          y={-100}
+          width={120}
+          height={LOGO_CONTENT_HEIGHT + 200}
+          fill="url(#sweep-grad)"
+        />
+      </AnimatedG>
+    </Svg>
+  );
+}
+
+// --- Master SplashScreen Component ---
+export default function SplashScreen({ onFinish }) {
+  // Screen/Background Fade
+  const screenOpacity = useSharedValue(0);
+
+  // Glow shared values
+  const glowOpacity = useSharedValue(0);
+  const glowScale = useSharedValue(1.0);
+
+  // Layer shared values
+  const roofTranslateY = useSharedValue(-60);
+  const roofOpacity = useSharedValue(0);
+
+  const houseScale = useSharedValue(0.82);
+  const houseOpacity = useSharedValue(0);
+
+  const textScale = useSharedValue(0.9);
+  const textOpacity = useSharedValue(0);
+
+  // Sweep shared values
+  const sweepX = useSharedValue(-LOGO_SIZE - 60);
+  const sweepOpacity = useSharedValue(0);
+
+  // Floating shared values (Scene 5)
+  const floatY = useSharedValue(0);
+  const floatScale = useSharedValue(1);
+
+  useEffect(() => {
+    // 1. SCREEN FADE IN (Scene 1)
+    screenOpacity.value = withTiming(1, { duration: 500 });
+
+    // 2. GLOW TIMELINE (Scene 1, 4, 6)
+    glowOpacity.value = withSequence(
+      // Scene 1: Fade to 0.18
+      withTiming(0.18, { duration: 500 }),
+      // Hold through Scene 2 & 3
+      withDelay(
+        1700,
+        withSequence(
+          // Scene 4: Breathing Glow (2 cycles of 500ms total)
+          // Cycle 1
+          withTiming(0.5, { duration: 250, easing: Easing.inOut(Easing.quad) }),
+          withTiming(0.25, { duration: 250, easing: Easing.inOut(Easing.quad) }),
+          // Cycle 2
+          withTiming(0.5, { duration: 250, easing: Easing.inOut(Easing.quad) }),
+          withTiming(0.25, { duration: 250, easing: Easing.inOut(Easing.quad) })
+        )
+      ),
+      // Hold during Scene 5, then Fade to 0% (Scene 6)
+      withDelay(
+        400,
+        withTiming(0, { duration: 400, easing: Easing.out(Easing.quad) })
+      )
+    );
+
+    // Glow Scale Pulse (Scene 4)
+    glowScale.value = withDelay(
+      2200,
+      withSequence(
+        // Cycle 1
+        withTiming(1.3, { duration: 250, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1.0, { duration: 250, easing: Easing.inOut(Easing.quad) }),
+        // Cycle 2
+        withTiming(1.3, { duration: 250, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1.0, { duration: 250, easing: Easing.inOut(Easing.quad) })
+      )
+    );
+
+    // 3. ROOF SLIDE (Scene 2)
+    roofTranslateY.value = withDelay(
+      500,
+      withTiming(0, {
+        duration: 650,
+        easing: Easing.bezier(0.22, 1, 0.36, 1),
+      })
+    );
+    roofOpacity.value = withDelay(500, withTiming(1, { duration: 300 }));
+
+    // 4. HOUSE SPRING SCALE (Scene 2)
+    houseScale.value = withDelay(
+      500,
+      withSpring(1.0, {
+        damping: 14,
+        stiffness: 160,
+      })
+    );
+    houseOpacity.value = withDelay(500, withTiming(1, { duration: 300 }));
+
+    // 5. TEXT FADE/SCALE (Scene 2, 150ms delay)
+    textOpacity.value = withDelay(650, withTiming(1, { duration: 450 }));
+    textScale.value = withDelay(
+      650,
+      withTiming(1.0, {
+        duration: 500,
+        easing: Easing.out(Easing.quad),
+      })
+    );
+
+    // 6. GLASS LIGHT SWEEP (Scene 3, starts at 1.4s)
+    sweepOpacity.value = withDelay(
+      1400,
+      withSequence(
+        withTiming(1, { duration: 50 }),
+        withDelay(600, withTiming(0, { duration: 50 }))
+      )
+    );
+    sweepX.value = withDelay(
+      1400,
+      withTiming(LOGO_SIZE + 60, {
+        duration: 700,
+        easing: Easing.linear,
+      })
+    );
+
+    // 7. FLOATING ANIMATION (Scene 5, 3.1s to 3.7s)
+    floatY.value = withDelay(
+      3100,
+      withSequence(
+        withTiming(-8, { duration: 300, easing: Easing.inOut(Easing.quad) }),
+        withTiming(0, { duration: 300, easing: Easing.inOut(Easing.quad) })
+      )
+    );
+    floatScale.value = withDelay(
+      3100,
+      withSequence(
+        withTiming(1.02, { duration: 300, easing: Easing.inOut(Easing.quad) }),
+        withTiming(1.0, { duration: 300, easing: Easing.inOut(Easing.quad) })
+      )
+    );
+
+    // 8. NAVIGATION TRIGGER (Exactly 4 seconds)
+    const timer = setTimeout(() => {
+      if (onFinish) {
+        runOnJS(onFinish)();
+      }
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Animated styles for Logo Segment Layers
+  const roofStyle = useAnimatedStyle(() => {
+    return {
+      opacity: roofOpacity.value,
+      transform: [{ translateY: roofTranslateY.value }],
+    };
+  });
+
+  const houseStyle = useAnimatedStyle(() => {
+    return {
+      opacity: houseOpacity.value,
+      transform: [{ scale: houseScale.value }],
+    };
+  });
+
+  const textStyle = useAnimatedStyle(() => {
+    return {
+      opacity: textOpacity.value,
+      transform: [{ scale: textScale.value }],
+    };
+  });
+
+  // Animated style for Logo Container (Float & Scale in Scene 5)
+  const containerFloatStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateY: floatY.value },
+        { scale: floatScale.value },
+      ],
+    };
+  });
+
+  const backgroundStyle = useAnimatedStyle(() => {
+    return {
+      opacity: screenOpacity.value,
+    };
+  });
+
+  return (
+    <Animated.View style={[styles.container, backgroundStyle]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FAF9F6" />
+
+      {/* 1. Behind Logo Radial Glow */}
+      <GlowEffect opacity={glowOpacity} scale={glowScale} />
+
+      {/* 2. Interactive Logo Container */}
+      <Animated.View style={[styles.logoContainer, containerFloatStyle]}>
+        {/* Logo segmented parts */}
+        <LogoLayers
+          roofStyle={roofStyle}
+          houseStyle={houseStyle}
+          textStyle={textStyle}
+        />
+
+        {/* Masked Glass Reflection Light Sweep */}
+        <LightSweep sweepX={sweepX} opacity={sweepOpacity} />
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+// --- Stylesheet ---
 const styles = StyleSheet.create({
-  wrapper: { flex: 1 },
-
-  background: {
+  container: {
     flex: 1,
-    width,
-    height,
-  },
-
-  scrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(10, 6, 30, 0.45)",
-  },
-
-  // ── Particles ──
-  particle: {
-    position: "absolute",
-  },
-
-  // ── Centre layout ──
-  center: {
-    flex: 1,
+    backgroundColor: "#FAF9F6", // Cream White Background
     justifyContent: "center",
     alignItems: "center",
   },
-
-  // ── Glow rings ──
-  ringContainer: {
-    position: "absolute",
-    justifyContent: "center",
-    alignItems: "center",
+  logoContainer: {
+    width: LOGO_SIZE,
+    height: LOGO_CONTENT_HEIGHT,
+    position: "relative",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
-
-  glowRing: {
+  layerWrapper: {
     position: "absolute",
-    borderWidth: 1.5,
-    borderColor: "rgba(180, 140, 255, 0.55)",
-    backgroundColor: "transparent",
+    width: LOGO_SIZE,
+    overflow: "hidden",
   },
-
-  // ── Logo ──
-  logoWrapper: {
+  imageStyle: {
+    position: "absolute",
     width: LOGO_SIZE,
     height: LOGO_SIZE,
+    contentFit: "contain",
+  },
+  glowContainer: {
+    position: "absolute",
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
-    borderRadius: LOGO_SIZE / 2,
-  },
-
-  logo: {
-    width: LOGO_SIZE,
-    height: LOGO_SIZE,
-  },
-
-  // Shimmer clip masks to logo bounds
-  shimmerClip: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: "hidden",
-    borderRadius: LOGO_SIZE / 2,
-  },
-
-  shimmerBar: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 60,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    transform: [{ rotate: "20deg" }],
-  },
-
-  // ── Typography ──
-  appName: {
-    marginTop: 28,
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#ffffff",
-    letterSpacing: 8,
-    textShadowColor: "rgba(140, 100, 255, 0.7)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 18,
-  },
-
-  tagline: {
-    marginTop: 6,
-    fontSize: 11,
-    fontWeight: "600",
-    color: "rgba(210, 190, 255, 0.85)",
-    letterSpacing: 3.5,
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-
-  // ── Decorative dots ──
-  dots: {
-    flexDirection: "row",
-    marginTop: 20,
-  },
-
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: "rgba(180, 150, 255, 0.6)",
-    marginHorizontal: 3.5,
-  },
-
-  // ── Bottom text ──
-  bottomText: {
-    position: "absolute",
-    bottom: 52,
-    alignSelf: "center",
-    fontSize: 12,
-    fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.65)",
-    letterSpacing: 1.2,
-    textAlign: "center",
+    zIndex: -1,
   },
 });
-

@@ -188,7 +188,7 @@ export default function LanguageSelectionScreen({ onFinish }) {
 
           {/* Icon circle with shimmer */}
           <View style={styles.iconWrapper}>
-            <Ionicons name="language" size={42} color="#fff" />
+            <Ionicons name="globe" size={42} color="#fff" />
             {/* shimmer sweep */}
             <View style={styles.shimmerClip} pointerEvents="none">
               <Animated.View style={[styles.shimmerBar, shimmerStyle]} />

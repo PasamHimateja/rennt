@@ -2,7 +2,9 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.db import transaction
-
+from asgiref.sync import async_to_sync
+from django.core.cache import cache
+import os
 from HAC.jwt_utils import jwt_required
 
 from HAC.services.auth_service import AuthService
@@ -729,7 +731,8 @@ def owner_requests(request, phone):
         result = RequestService.owner_requests(phone)
         return Response(result, status=status.HTTP_200_OK)
     except Exception as e:
-        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        import traceback
+        return Response({"error": traceback.format_exc()}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -1167,3 +1170,101 @@ def update_issue(request, id):
         if "Issue not found" in str(e):
             return Response({"error": "Issue not found"}, status=404)
         return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def send_otp(request):
+    try:
+        phone = request.data.get("phone")
+ 
+        result = AuthService.send_otp(phone)
+ 
+        return Response(result, status=status.HTTP_200_OK)
+ 
+    except ValueError as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+ 
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    
+@api_view(['POST'])
+def verify_otp(request):
+    try:
+        phone = request.data.get("phone")
+        otp = request.data.get("otp")
+        role = request.data.get("role")
+ 
+        result = AuthService.verify_otp(phone, otp, role)
+ 
+        return Response(
+            result,
+            status=status.HTTP_200_OK
+        )
+ 
+    except ValueError as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+ 
+    except Exception as e:
+        print("VERIFY OTP ERROR:", str(e))
+ 
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .services.auth_service import AuthService
+
+@api_view(["POST"])
+def send_admin_otp(request):
+    try:
+        data = AuthService.send_admin_otp(request.data.get("phone"))
+        return Response(data, status=200)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+def verify_admin_otp(request):
+    try:
+        data = AuthService.verify_admin_otp(
+            request.data.get("phone"),
+            request.data.get("otp")
+        )
+        return Response(data, status=200)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+def admin_password_login(request):
+    try:
+        data = AuthService.admin_password_login(
+            request.data.get("phone"),
+            request.data.get("password"),
+            request.data.get("action")
+        )
+        return Response(data, status=200)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)
+
+
+@api_view(["POST"])
+def check_admin_password_status(request):
+    try:
+        data = AuthService.check_admin_password_status(
+            request.data.get("phone")
+        )
+        return Response(data, status=200)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=400)

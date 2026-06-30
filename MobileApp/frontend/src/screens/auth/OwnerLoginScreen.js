@@ -24,14 +24,14 @@ const WHITE = COLORS.WHITE;
 const NAVY = COLORS.PRIMARY;
 const LIGHT_PURPLE = COLORS.PRIMARY_LIGHT;
 
-const apiKey = process.env.EXPO_PUBLIC_OTP_API_KEY;
+
 
 export default function OwnerLoginScreen({ navigation }) {
 
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState(["", "", "", ""]);
   const otpInputs = useRef([]);
-  const [sessionId, setSessionId] = useState("");
+
   const [showOTPField, setShowOTPField] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -44,155 +44,175 @@ export default function OwnerLoginScreen({ navigation }) {
   };
 
   // SEND OTP
-  const handleSendOTP = async () => {
+const handleSendOTP = async () => {
 
-    if (!validatePhone(phone)) {
-      setErrors({ phone: "Enter valid mobile number" });
-      return;
-    }
+  if (!validatePhone(phone)) {
+    setErrors({ phone: "Enter valid mobile number" });
+    return;
+  }
 
-    try {
+  try {
+    setLoading(true);
 
-      setLoading(true);
-
-      const response = await fetch(
-        `https://2factor.in/API/V1/${apiKey}/SMS/${phone}/AUTOGEN3/OTP1`
-      );
-
-      const data = await response.json();
-
-      console.log("SEND OTP RESPONSE:", data);
-
-      if (data.Status === "Success") {
-
-        setSessionId(data.Details);
-        setShowOTPField(true);
-        setOtp(["", "", "", ""]);
-        setErrors({});
-
-        Alert.alert("Success", "OTP Sent Successfully");
-
-      } else {
-
-        Alert.alert("Error", "Failed To Send OTP. Please try again.");
-
+    const response = await fetchWithAuth(
+      `${BASE_URL}/api/send-otp/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: phone,
+          role: "owner",  
+        }),
       }
+    );
 
-    } catch (error) {
+    const data = await response.json();
 
-      console.log("SEND OTP ERROR:", error);
-      Alert.alert("Error", "Something went wrong. Check your internet.");
+    console.log("SEND OTP RESPONSE:", data);
 
-    } finally {
-
-      setLoading(false);
-
+    if (response.ok) {
+      setShowOTPField(true);
+      setOtp(["", "", "", ""]);
+      setErrors({});
+      Alert.alert("Success", "OTP Sent Successfully");
+    } else {
+      Alert.alert("Error", data.error || "Failed To Send OTP");
     }
 
-  };
+  } catch (error) {
+    console.log("SEND OTP ERROR:", error);
+    Alert.alert("Error", "Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // VERIFY OTP
-  const handleVerifyOTP = async () => {
-    const otpString = otp.join("");
-    if (otpString.length !== 4) {
-      setErrors({ otp: "Enter valid 4-digit OTP" });
-      return;
-    }
+const handleVerifyOTP = async () => {
+  const otpString = otp.join("");
 
-    try {
+  if (otpString.length !== 4) {
+    setErrors({ otp: "Enter valid 4-digit OTP" });
+    return;
+  }
 
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const verifyResponse = await fetch(
-        `https://2factor.in/API/V1/${apiKey}/SMS/VERIFY/${sessionId}/${otpString}`
-      );
+    const response = await fetchWithAuth(
+      `${BASE_URL}/api/verify-otp/`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone: phone,
+          otp: otpString,
+          role: "owner",
+        }),
+      }
+    );
 
-      const verifyData = await verifyResponse.json();
+    const data = await response.json();
 
-      console.log("VERIFY OTP RESPONSE:", verifyData);
+    console.log("VERIFY OTP RESPONSE:", data);
 
-      if (verifyData.Status === "Success") {
+    if (response.ok && data.verified) {
 
-        try {
+      // EXISTING OWNER
+      if (data.exists && data.role === "owner") {
 
-          // CHECK OWNER EXISTS
-          const checkResponse = await fetchWithAuth(
-            `${BASE_URL}/api/check-owner/${phone}/`
-          );
-
-          const userData = await checkResponse.json();
-
-          console.log("CHECK USER:", userData);
-
-          if (userData.exists) {
-
-            if (userData.token) await AsyncStorage.setItem("userToken", userData.token);
-            await AsyncStorage.setItem("ownerPhone", String(userData.user.id));
-
-            const raw = await AsyncStorage.getItem("loggedInOwnerAccounts");
-            let accounts = raw ? JSON.parse(raw) : [];
-            if (!accounts.find(a => a.phone === userData.user.phone)) {
-              accounts.push({ phone: userData.user.phone, name: userData.user.name });
-              await AsyncStorage.setItem("loggedInOwnerAccounts", JSON.stringify(accounts));
-            }
-
-            if (userData.status === "pending" || userData.status === "suspend") {
-              navigation.replace("WaitingScreen", {
-                phone: String(userData.user.id),
-              });
-            } else {
-              Alert.alert("Welcome", "Login Successful");
-              navigation.reset({
-                index: 0,
-                routes: [{ name: "OwnerNavigation", params: { phone: String(userData.user.id) } }],
-              });
-            }
-
-          } else {
-
-            // NEW OWNER
-            navigation.navigate("OwnerRegistrationScreen", {
-              phone: phone,
-            });
-
-          }
-
-        } catch (error) {
-
-          console.log("CHECK USER ERROR:", error);
-          Alert.alert("Error", "User check failed. Try again.");
-
+        if (data.token) {
+          await AsyncStorage.setItem("userToken", data.token);
         }
 
-      } else {
+        await AsyncStorage.setItem(
+          "ownerPhone",
+          String(data.user.phone)
+        );
 
-        // CLEAR OTP ON WRONG ENTRY
-        setOtp(["", "", "", ""]);
-        otpInputs.current[0]?.focus();
-        setErrors({ otp: "Invalid OTP. Please try again." });
+        const raw = await AsyncStorage.getItem(
+          "loggedInOwnerAccounts"
+        );
 
+        let accounts = raw ? JSON.parse(raw) : [];
+
+        if (!accounts.find(a => a.phone === data.user.phone)) {
+          accounts.push({
+            phone: data.user.phone,
+            name: data.user.name,
+          });
+
+          await AsyncStorage.setItem(
+            "loggedInOwnerAccounts",
+            JSON.stringify(accounts)
+          );
+        }
+
+        if (
+          data.status === "pending" ||
+          data.status === "suspend"
+        ) {
+          navigation.replace("WaitingScreen", {
+            phone: data.user.phone,
+          });
+        } else {
+          Alert.alert("Welcome", "Login Successful");
+
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: "OwnerNavigation",
+                params: {
+                  phone: data.user.phone,
+                },
+              },
+            ],
+          });
+        }
       }
 
-    } catch (error) {
+      // NEW OWNER
+      else if (!data.exists) {
+  navigation.navigate("OwnerRegistrationScreen", {
+    phone: phone,
+  });
+} else {
+  Alert.alert(
+    "Access Denied",
+    "This mobile number is registered as a tenant."
+  );
+}
 
-      console.log("VERIFY OTP ERROR:", error);
-      Alert.alert("Error", "OTP Verification Failed. Check your internet.");
-
-    } finally {
-
-      setLoading(false);
-
+    } else {
+      setOtp(["", "", "", ""]);
+      otpInputs.current[0]?.focus();
+      setErrors({
+        otp: data.error || "Invalid OTP",
+      });
     }
 
-  };
+  } catch (error) {
+    console.log("VERIFY OTP ERROR:", error);
+    Alert.alert(
+      "Error",
+      "OTP Verification Failed"
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   // RESEND OTP HANDLER
-  const handleResendOTP = () => {
-    setOtp(["", "", "", ""]);
-    setErrors({});
-    setShowOTPField(false);
-    setSessionId("");
-  };
+const handleResendOTP = () => {
+  setOtp(["", "", "", ""]);
+  setErrors({});
+  setShowOTPField(false);
+};
 
   return (
     <>

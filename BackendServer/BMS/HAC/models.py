@@ -513,4 +513,13 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.recipient_phone}"
+
+class AdminPassword(models.Model):
+
+    phone = models.CharField(max_length=15, unique=True)
+    password = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now=True)
+ 
+    def __str__(self):
+        return self.phone
  

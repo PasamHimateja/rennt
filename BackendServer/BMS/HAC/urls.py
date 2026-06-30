@@ -161,6 +161,31 @@ urlpatterns = [
     path('tenant/co_residents/<str:phone>/', views.get_co_residents, name='get_co_residents'),
     path('block_tenant/', views.block_tenant, name='block_tenant'),
     path('unblock_tenant/', views.unblock_tenant, name='unblock_tenant'),
+    path('send-otp/', views.send_otp, name='send_otp'),
+    path('verify-otp/', views.verify_otp, name='verify_otp'),
+
+     path(
+    'send-admin-otp/',
+    views.send_admin_otp,
+    name='send_admin_otp'
+    ),
+ 
+    path(
+    'verify-admin-otp/',
+    views.verify_admin_otp,
+    name='verify_admin_otp'
+    ),
+ 
+    path(
+    'admin-password/',
+    views.admin_password_login,
+    name='admin_password_login'
+    ),
+    path(
+    'check-admin-password-status/',
+    views.check_admin_password_status,
+    name='check_admin_password_status'
+    ),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

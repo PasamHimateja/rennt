@@ -176,7 +176,11 @@ export default function OwnerTenantsScreen({ navigation, route }) {
           <View style={styles.tenantInfo}>
             <Text style={styles.tenantName}>{item.name}</Text>
             <Text style={styles.tenantDetail}>Phone: {item.phone}</Text>
-            <Text style={styles.tenantDetail}>{item.type} • Room {item.roomno || item.flatno || item.sectionNo}</Text>
+            <Text style={styles.tenantDetail}>
+              {item.type} • Room {item.roomno || item.flatno || item.sectionNo}
+              {item.floor !== undefined && item.floor !== null ? ` • Floor ${item.floor}` : ''}
+              {(item.type || "").toLowerCase() === 'hostel' && item.bed !== undefined && item.bed !== null ? ` • Bed ${item.bed}` : ''}
+            </Text>
             <Text style={[styles.tenantDetail, { marginTop: 4, color: item.aadhar_id ? '#10B981' : '#F59E0B', fontWeight: '600' }]}>
               Aadhaar: {item.aadhar_id || "Pending Verification"}
             </Text>
@@ -217,7 +221,7 @@ export default function OwnerTenantsScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#5F259F" translucent={false} />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#1F2937" />
@@ -293,7 +297,8 @@ export default function OwnerTenantsScreen({ navigation, route }) {
                   <View style={styles.infoRow}>
                     <Text style={styles.infoLabel}>Allotted Space:</Text>
                     <Text style={styles.infoValue}>
-                      {selectedTenantDetails.property_type} • Room {selectedTenantDetails.room_number} (Floor {selectedTenantDetails.floor_number})
+                      {selectedTenantDetails.property_type} • Room {selectedTenantDetails.room_number} (Floor {selectedTenantDetails.floor_number}
+                      {(selectedTenantDetails.stay_type || selectedTenantDetails.property_type || "").toLowerCase() === 'hostel' && selectedTenantDetails.bed_number ? `, Bed ${selectedTenantDetails.bed_number}` : ''})
                     </Text>
                   </View>
 

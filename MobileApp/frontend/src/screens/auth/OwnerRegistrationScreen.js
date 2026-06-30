@@ -147,7 +147,7 @@ export default function OwnerCommercialSection({
   // Step indicator shrink animations based on scroll
   const stepCardPadding = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [30, 15], 
+    outputRange: [30, 15],
     extrapolate: "clamp",
   });
   const stepCircleSize = scrollY.interpolate({
@@ -157,27 +157,27 @@ export default function OwnerCommercialSection({
   });
   const stepCircleRadius = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [28, 20], 
+    outputRange: [28, 20],
     extrapolate: "clamp",
   });
   const stepIconScale = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [1, 0.75], 
+    outputRange: [1, 0.75],
     extrapolate: "clamp",
   });
   const stepLabelOpacity = scrollY.interpolate({
     inputRange: [0, 60],
-    outputRange: [1, 0], 
+    outputRange: [1, 0],
     extrapolate: "clamp",
   });
   const stepLabelHeight = scrollY.interpolate({
     inputRange: [0, 60],
-    outputRange: [36, 0], 
+    outputRange: [36, 0],
     extrapolate: "clamp",
   });
   const stepLineLength = scrollY.interpolate({
     inputRange: [0, 100],
-    outputRange: [80, 40], 
+    outputRange: [80, 40],
     extrapolate: "clamp",
   });
 
@@ -241,7 +241,7 @@ export default function OwnerCommercialSection({
     floorsData: [],
   };
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [isCheckingIdProof, setIsCheckingIdProof] = useState(false);
   const [idProofError, setIdProofError] = useState("");
   const idProofCheckTimeout = useRef(null);
@@ -249,7 +249,7 @@ export default function OwnerCommercialSection({
   const [showImagePickerModal, setShowImagePickerModal] = useState(false);
   const [imagePickerTarget, setImagePickerTarget] = useState(null);
 
-  
+
   //added code
   const [form, setForm] = useState(initialForm);
   const [step3Summary, setStep3Summary] = useState("");
@@ -705,7 +705,7 @@ export default function OwnerCommercialSection({
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert(t("permission_denied") || "Permission Denied", t("allow_location_msg") || "Allow location access to use this feature.");
+        Alert.alert(t("permission_denied") || "Permission Denied", t("allow_location_message") || "Allow location access to use this feature.");
         return;
       }
       const pos = await Location.getCurrentPositionAsync({});
@@ -751,73 +751,73 @@ export default function OwnerCommercialSection({
   const staticMapUrl = (lat, lon) =>
     `https://staticmap.openstreetmap.de/staticmap.php?center=${lat},${lon}&zoom=14&size=640x240&markers=${lat},${lon},red-pushpin`;
 
-async function registerForPushNotificationsAsync() {
+  async function registerForPushNotificationsAsync() {
 
-  try {
+    try {
 
-    let token;
+      let token;
 
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
 
-    let finalStatus = existingStatus;
+      let finalStatus = existingStatus;
 
-    if (existingStatus !== "granted") {
+      if (existingStatus !== "granted") {
 
-      const { status } =
-        await Notifications.requestPermissionsAsync();
+        const { status } =
+          await Notifications.requestPermissionsAsync();
 
-      finalStatus = status;
-    }
+        finalStatus = status;
+      }
 
-    if (finalStatus !== "granted") {
+      if (finalStatus !== "granted") {
 
-      alert("Notification permission not granted");
+        alert("Notification permission not granted");
+
+        return null;
+      }
+
+      // ANDROID CHANNEL
+      if (Platform.OS === "android") {
+
+        await Notifications.setNotificationChannelAsync(
+          "default",
+          {
+            name: "default",
+            importance:
+              Notifications.AndroidImportance.MAX,
+            vibrationPattern: [0, 250, 250, 250],
+            lightColor: "#FF231F7C",
+          }
+        );
+
+      }
+
+      // PROJECT ID
+      const projectId =
+        Constants?.expoConfig?.extra?.eas?.projectId ??
+        Constants?.easConfig?.projectId;
+
+      token = (
+        await Notifications.getExpoPushTokenAsync({
+          projectId,
+        })
+      ).data;
+
+      console.log("EXPO PUSH TOKEN:", token);
+
+      return token;
+
+    } catch (error) {
+
+      console.log(
+        "REGISTER PUSH ERROR:",
+        error
+      );
 
       return null;
     }
-
-    // ANDROID CHANNEL
-    if (Platform.OS === "android") {
-
-      await Notifications.setNotificationChannelAsync(
-        "default",
-        {
-          name: "default",
-          importance:
-            Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: "#FF231F7C",
-        }
-      );
-
-    }
-
-    // PROJECT ID
-    const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ??
-      Constants?.easConfig?.projectId;
-
-    token = (
-      await Notifications.getExpoPushTokenAsync({
-        projectId,
-      })
-    ).data;
-
-    console.log("EXPO PUSH TOKEN:", token);
-
-    return token;
-
-  } catch (error) {
-
-    console.log(
-      "REGISTER PUSH ERROR:",
-      error
-    );
-
-    return null;
   }
-}
   const zoomIn = () => {
     if (!mapRegion) return;
     setMapRegion({
@@ -940,6 +940,15 @@ async function registerForPushNotificationsAsync() {
   };
 
   const handleSubmit = async () => {
+    // Check floor rooms validation
+    if (form.floorsData && form.floorsData.length > 0) {
+      const invalidFloor = form.floorsData.find(floor => !floor.rooms || floor.rooms.length === 0);
+      if (invalidFloor) {
+        Alert.alert(t("error") || "Error", "Each floor must contain at least one room.");
+        return;
+      }
+    }
+
     // ✅ Normalize facilities (VERY IMPORTANT)
     const normalize = (arr) => arr.map(f => f.toLowerCase().trim());
     const normalizedSelected = normalize(selectedFacilities);
@@ -1000,7 +1009,7 @@ async function registerForPushNotificationsAsync() {
 
     console.log("SUBMIT DATA:", submitData);
 
-    Alert.alert(t("confirm_registration"), t("confirm_submit_msg"), [
+    Alert.alert(t("confirm_registration"), t("confirm_submit_message"), [
       { text: t("cancel"), style: "cancel" },
       {
         text: t("submit"),
@@ -1044,67 +1053,67 @@ async function registerForPushNotificationsAsync() {
 
             if (response.ok) {
 
-  const data = await response.json();
+              const data = await response.json();
 
-  // SAVE JWT TOKEN
-  if (data.token) {
-    await AsyncStorage.setItem("userToken", data.token);
-  }
+              // SAVE JWT TOKEN
+              if (data.token) {
+                await AsyncStorage.setItem("userToken", data.token);
+              }
 
-  // =========================
-  // PUSH NOTIFICATION CODE
-  // =========================
+              // =========================
+              // PUSH NOTIFICATION CODE
+              // =========================
 
-  try {
+              try {
 
-    const expoPushToken =
-      await registerForPushNotificationsAsync();
+                const expoPushToken =
+                  await registerForPushNotificationsAsync();
 
-    console.log("OWNER PUSH TOKEN:", expoPushToken);
+                console.log("OWNER PUSH TOKEN:", expoPushToken);
 
-    if (expoPushToken) {
+                if (expoPushToken) {
 
-      await fetchWithAuth(
-        `${BASE_URL}/api/save-push-token/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone: phone,
-            role: "owner",
-            push_token: expoPushToken,
-          }),
-        }
-      );
+                  await fetchWithAuth(
+                    `${BASE_URL}/api/save-push-token/`,
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        phone: phone,
+                        role: "owner",
+                        push_token: expoPushToken,
+                      }),
+                    }
+                  );
 
-      console.log("Push token saved successfully");
-    }
+                  console.log("Push token saved successfully");
+                }
 
-  } catch (pushError) {
+              } catch (pushError) {
 
-    console.log(
-      "Push token error:",
-      pushError
-    );
+                console.log(
+                  "Push token error:",
+                  pushError
+                );
 
-  }
+              }
 
-  // =========================
+              // =========================
 
-  Alert.alert(t("success"), t("registration_successful"), [
-    {
-      text: t("ok") || "OK",
-      onPress: () =>
-        navigation.replace(
-          "WaitingScreen",
-          {
-            phone: data.owner_id || phone,
-          }
-        ),
-    },
-  ]);
+              Alert.alert(t("success"), t("registration_successful"), [
+                {
+                  text: t("ok") || "OK",
+                  onPress: () =>
+                    navigation.replace(
+                      "WaitingScreen",
+                      {
+                        phone: data.owner_id || phone,
+                      }
+                    ),
+                },
+              ]);
 
             } else {
               Alert.alert(t("error"), t("registration_failed"));
@@ -1266,7 +1275,7 @@ async function registerForPushNotificationsAsync() {
                   </Text>
                 </View>
                 <View style={styles.headerIconContainer}>
-                  <Ionicons name="business" size={20} color={LIGHT_PURPLE} />
+                  <Image source={require("../../../assets/images/rent1.png")} style={{ width: 60, height: 70 }} resizeMode="contain" />
                 </View>
               </View>
             </View>
@@ -1288,64 +1297,65 @@ async function registerForPushNotificationsAsync() {
                   {/* STEP INDICATOR CARD */}
                   <View style={[styles.sectionCard, { paddingVertical: 10, paddingHorizontal: 16, marginBottom: 10 }]}>
                     <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
-                  {[1, 2].map((i) => {
-                    const isActive = step === i;
-                    const isCompleted = step > i;
-                    const isInactive = step < i;
+                      {[1, 2].map((i) => {
+                        const isActive = step === i;
+                        const isCompleted = step > i;
+                        const isInactive = step < i;
 
-                    return (
-                    <React.Fragment key={i}>
-                      <View style={{ alignItems: "center" }}>
-                        <View
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 20,
-                            overflow: "hidden",
-                            backgroundColor: isInactive ? "#E5E7EB" : LIGHT_PURPLE,
-                          }}
-                        >
-                          {isActive ? (
-                            <LinearGradient
-                              colors={["#8B5CF6", "#6D28D9"]}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
-                            >
-                              <FontAwesome name={i === 1 ? "user" : "home"} size={18} color={WHITE} />
-                            </LinearGradient>
-                          ) : (
-                            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                              {isCompleted ? (
-                                <FontAwesome name="check" size={18} color={WHITE} />
-                              ) : (
-                                <FontAwesome name={i === 1 ? "user" : "home"} size={18} color="#9CA3AF" />
-                              )}
+                        return (
+                          <React.Fragment key={i}>
+                            <View style={{ alignItems: "center" }}>
+                              <View
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: 20,
+                                  overflow: "hidden",
+                                  backgroundColor: isInactive ? "#E5E7EB" : LIGHT_PURPLE,
+                                }}
+                              >
+                                {isActive ? (
+                                  <LinearGradient
+                                    colors={["#8B5CF6", "#6D28D9"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+                                  >
+                                    <FontAwesome name={i === 1 ? "user" : "home"} size={18} color={WHITE} />
+                                  </LinearGradient>
+                                ) : (
+                                  <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                                    {isCompleted ? (
+                                      <FontAwesome name="check" size={18} color={WHITE} />
+                                    ) : (
+                                      <FontAwesome name={i === 1 ? "user" : "home"} size={18} color="#9CA3AF" />
+                                    )}
+                                  </View>
+                                )}
+                              </View>
+                              <Text style={{ fontSize: 11, fontWeight: "600", color: isActive ? LIGHT_PURPLE : (isCompleted ? "#10B981" : "#9CA3AF"), marginTop: 5, textAlign: "center" }}>
+                                {i === 1 ? "Owner Info" : "Floor Layout"}
+                              </Text>
                             </View>
-                          )}
-                        </View>
-                        <Text style={{ fontSize: 11, fontWeight: "600", color: isActive ? LIGHT_PURPLE : (isCompleted ? "#10B981" : "#9CA3AF"), marginTop: 5, textAlign: "center" }}>
-                          {i === 1 ? "Owner Info" : "Floor Layout"}
-                        </Text>
-                      </View>
-                      {i < 2 && (
-                        <View style={{ flex: 1, height: 3, backgroundColor: "#E5E7EB", borderRadius: 2, marginHorizontal: 10, marginBottom: 14 }}>
-                          <Animated.View
-                            style={{
-                              height: "100%",
-                              backgroundColor: LIGHT_PURPLE,
-                              borderRadius: 2,
-                              width: lineProgress[i - 1].interpolate({
-                                inputRange: [0, 1],
-                                outputRange: ["0%", "100%"]
-                              }),
-                            }}
-                          />
-                        </View>
-                      )}
-                    </React.Fragment>
-                  )})}
-                </View>
+                            {i < 2 && (
+                              <View style={{ flex: 1, height: 3, backgroundColor: "#E5E7EB", borderRadius: 2, marginHorizontal: 10, marginBottom: 14 }}>
+                                <Animated.View
+                                  style={{
+                                    height: "100%",
+                                    backgroundColor: LIGHT_PURPLE,
+                                    borderRadius: 2,
+                                    width: lineProgress[i - 1].interpolate({
+                                      inputRange: [0, 1],
+                                      outputRange: ["0%", "100%"]
+                                    }),
+                                  }}
+                                />
+                              </View>
+                            )}
+                          </React.Fragment>
+                        )
+                      })}
+                    </View>
                   </View>
 
                   {/* ---------- STEP 1 ---------- */}
@@ -1354,273 +1364,22 @@ async function registerForPushNotificationsAsync() {
                   {/* ---------- STEP 2 ---------- */}
                   {step === 1 && (
                     <>
-                    {/* Owner Details Card */}
-                    <View style={styles.sectionCard}>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
-                        <View style={{ width: 44, height: 44, backgroundColor: "#F5F3FF", borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 15 }}>
-                          <FontAwesome name="user-o" size={20} color={LIGHT_PURPLE} />
-                        </View>
-                        <View>
-                          <Text style={{ fontSize: 18, fontWeight: "bold", color: "#111827" }}>Owner Details</Text>
-                          <Text style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>Provide the owner information</Text>
-                        </View>
-                      </View>
-
-                      <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
-                        Owner Full Name <Text style={{ color: "#EF4444" }}>*</Text>
-                      </Text>
-
-                      <View
-                        style={[
-                          styles.inputContainer,
-                          styles.inputContainerStep2,
-                          { paddingLeft: 6, height: 50 }
-                        ]}
-                      >
-                        <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                          <FontAwesome name="user-o" size={18} color={LIGHT_PURPLE} />
-                        </View>
-
-                        <TextInput
-                          style={[
-                            styles.input,
-                            errors.name && styles.inputError,
-                            { flex: 1 },
-                          ]}
-                          placeholder="Enter owner full name"
-                          placeholderTextColor="gray"
-                          value={form.name}
-                          onChangeText={(v) => {
-
-                            let filtered =
-                              v.replace(/[^A-Za-z\s]/g, "");
-
-                            if (filtered.length > 30) {
-                              filtered = filtered.slice(0, 30);
-                            }
-
-                            setForm({
-                              ...form,
-                              name: filtered,
-                            });
-
-                            setErrors({
-                              ...errors,
-                              name: "",
-                            });
-
-                          }}
-                        />
-                      </View>
-
-                      {errors.name ? (
-                        <Text style={styles.errorText}>
-                          {errors.name}
-                        </Text>
-                      ) : null}
-
-                      <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
-                        Identity Proof Type <Text style={{ color: "#EF4444" }}>*</Text>
-                      </Text>
-                      <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }, errors.idProofType && styles.inputError]}>
-                        <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                          <FontAwesome name="id-card-o" size={18} color={LIGHT_PURPLE} />
-                        </View>
-                        <Picker
-                          selectedValue={form.idProofType}
-                          onValueChange={(v) => {
-                            setForm({
-                              ...form,
-                              idProofType: v,
-                              idProofNumber: "",
-                            });
-                            setErrors({
-                              ...errors,
-                              idProofType: "",
-                              idProofNumber: "",
-                            });
-                          }}
-                          style={[
-                            styles.picker,
-                            { flex: 1, height: 50, marginLeft: -10 },
-                          ]}
-                        >
-                          <Picker.Item label="Select ID type" value="" color="gray" />
-                          <Picker.Item label="Aadhaar Card" value="Aadhaar Card" />
-                          <Picker.Item label="PAN Card" value="PAN Card" />
-                          <Picker.Item label="Voter ID" value="Voter ID" />
-                        </Picker>
-                      </View>
-                      {errors.idProofType ? (
-                        <Text style={styles.errorText}>
-                          {errors.idProofType}
-                        </Text>
-                      ) : null}
-
-                      {form.idProofType !== "" && (
-                        <>
-                          <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
-                            {form.idProofType === "Aadhaar Card"
-                              ? "Aadhaar Number"
-                              : form.idProofType === "PAN Card"
-                                ? "PAN Card Number"
-                                : "Voter ID Number"}
-                          </Text>
-                          <View
-                            style={[
-                              styles.inputContainer,
-                              styles.inputContainerStep2,
-                              { paddingLeft: 6, height: 50 }
-                            ]}
-                          >
-                            <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                              <FontAwesome name="id-card-o" size={18} color={LIGHT_PURPLE} />
-                            </View>
-                            <TextInput
-                              style={[
-                                styles.input,
-                                errors.idProofNumber && styles.inputError,
-                                { flex: 1 },
-                              ]}
-                              placeholder={
-                                form.idProofType === "Aadhaar Card"
-                                  ? "Enter Aadhaar number"
-                                  : form.idProofType === "PAN Card"
-                                    ? "Enter PAN number"
-                                    : "Enter Voter ID"
-                              }
-                              placeholderTextColor="gray"
-                              keyboardType={
-                                form.idProofType === "Aadhaar Card"
-                                  ? "numeric"
-                                  : "default"
-                              }
-                              autoCapitalize={
-                                form.idProofType === "PAN Card" || form.idProofType === "Voter ID"
-                                  ? "characters"
-                                  : "none"
-                              }
-                              maxLength={
-                                form.idProofType === "Aadhaar Card"
-                                  ? 12
-                                  : 10
-                              }
-                              value={form.idProofNumber}
-                              onChangeText={(v) => {
-                                let formatted = v;
-                                if (form.idProofType === "Aadhaar Card") {
-                                  formatted = v.replace(/[^0-9]/g, "");
-                                } else if (form.idProofType === "PAN Card" || form.idProofType === "Voter ID") {
-                                  formatted = v.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-                                }
-                                setForm({
-                                  ...form,
-                                  idProofNumber: formatted,
-                                });
-                                setErrors({
-                                  ...errors,
-                                  idProofNumber: "",
-                                });
-                                setIdProofError("");
-
-                                if (idProofCheckTimeout.current) clearTimeout(idProofCheckTimeout.current);
-                                idProofCheckTimeout.current = setTimeout(() => {
-                                  const expectedLength = form.idProofType === "Aadhaar Card" ? 12 : 10;
-                                  if (formatted.length === expectedLength) {
-                                    checkIdProofUniqueness(formatted);
-                                  }
-                                }, 500);
-                              }}
-                            />
-                            {isCheckingIdProof && <ActivityIndicator size="small" color="#7A3FC4" style={{ marginRight: 10 }} />}
+                      {/* Owner Details Card */}
+                      <View style={styles.sectionCard}>
+                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+                          <View style={{ width: 44, height: 44, backgroundColor: "#F5F3FF", borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 15 }}>
+                            <FontAwesome name="user-o" size={20} color={LIGHT_PURPLE} />
                           </View>
-                          {errors.idProofNumber ? (
-                            <Text style={styles.errorText}>
-                              {errors.idProofNumber}
-                            </Text>
-                          ) : null}
-                        </>
-                      )}
-                    </View>
-
-                    {/* Stay Details Card */}
-                    <View style={styles.sectionCard}>
-                      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
-                        <View style={{ width: 44, height: 44, backgroundColor: "#F5F3FF", borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 15 }}>
-                          <FontAwesome name="building-o" size={20} color={LIGHT_PURPLE} />
+                          <View>
+                            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#111827" }}>Owner Details</Text>
+                            <Text style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>Provide the owner information</Text>
+                          </View>
                         </View>
-                        <View>
-                          <Text style={{ fontSize: 18, fontWeight: "bold", color: "#111827" }}>Stay Details</Text>
-                          <Text style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>Provide the stay information</Text>
-                        </View>
-                      </View>
 
-                    <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
-                      Stay Type <Text style={{ color: "#EF4444" }}>*</Text>
-                    </Text>
-                    <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }, errors.stayType && styles.inputError]}>
-                      <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                        <FontAwesome name="building-o" size={18} color={LIGHT_PURPLE} />
-                      </View>
-                      <Picker
-                        selectedValue={form.stayType}
-                        onValueChange={(v) => {
-                          handleStayTypeChange(v);
-                        }}
-                        style={[
-                          styles.picker,
-                          { flex: 1, height: 50, marginLeft: -10 },
-                        ]}
-                      >
-                        <Picker.Item label={t("select_stay_type")} value="" color="gray" />
-                        <Picker.Item label={t("hostel")} value="hostel" />
-                        <Picker.Item label={t("apartment")} value="apartment" />
-                        <Picker.Item label={t("commercial")} value="commercial" />
-                      </Picker>
-                    </View>
-                    {errors.stayType ? (
-                      <Text style={styles.errorText}>{errors.stayType}</Text>
-                    ) : null}
+                        <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
+                          Owner Full Name <Text style={{ color: "#EF4444" }}>*</Text>
+                        </Text>
 
-                    {/* HOSTEL */}
-                    {form.stayType === "hostel" && (
-                      <>
-                        <Text style={styles.label}>{t("hostel_name")}</Text>
-                        <View
-                          style={[
-                            styles.inputContainer,
-                            styles.inputContainerStep2,
-                          ]}
-                        >
-                          <TextInput
-                            style={[
-                              styles.input,
-                              errors.hostelName && styles.inputError,
-                              { flex: 1 },
-                            ]}
-                            placeholder={t("enter_hostel_name")}
-                            placeholderTextColor="gray"
-                            value={form.hostelName}
-                            onChangeText={(v) => {
-                              setForm({ ...form, hostelName: v });
-                            }}
-                            onBlur={() =>
-                              setErrors({
-                                ...errors,
-                                hostelName: validatePropertyName(
-                                  form.hostelName,
-                                ),
-                              })
-                            }
-                          />
-                        </View>
-                        {errors.hostelName ? (
-                          <Text style={styles.errorText}>
-                            {errors.hostelName}
-                          </Text>
-                        ) : null}
-
-                        <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>Location <Text style={{ color: "#EF4444" }}>*</Text></Text>
                         <View
                           style={[
                             styles.inputContainer,
@@ -1629,1557 +1388,1809 @@ async function registerForPushNotificationsAsync() {
                           ]}
                         >
                           <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                            <Ionicons name="location-outline" size={18} color={LIGHT_PURPLE} />
+                            <FontAwesome name="user-o" size={18} color={LIGHT_PURPLE} />
                           </View>
+
                           <TextInput
                             style={[
                               styles.input,
-                              errors.location && styles.inputError,
+                              errors.name && styles.inputError,
                               { flex: 1 },
                             ]}
-                            placeholder="Property Location"
+                            placeholder="Enter owner full name"
                             placeholderTextColor="gray"
-                            value={form.location}
+                            value={form.name}
                             onChangeText={(v) => {
-                              setForm({ ...form, location: v });
-                              if (errors.location) {
-                                setErrors({ ...errors, location: '' });
+
+                              let filtered =
+                                v.replace(/[^A-Za-z\s]/g, "");
+
+                              if (filtered.length > 30) {
+                                filtered = filtered.slice(0, 30);
                               }
-                            }}
-                            onBlur={() =>
+
+                              setForm({
+                                ...form,
+                                name: filtered,
+                              });
+
                               setErrors({
                                 ...errors,
-                                location: validateLocation(form.location),
-                              })
-                            }
+                                name: "",
+                              });
+
+                            }}
                           />
-                          <TouchableOpacity
-                            onPress={handleGetCurrentLocation}
-                            style={{ padding: 8 }}
-                          >
-                            <MaterialIcons
-                              name="my-location"
-                              size={20}
-                              color="#4B5563"
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={openInGoogleMaps}
-                            style={{ padding: 8 }}
-                          >
-                            <Ionicons
-                              name="search"
-                              size={20}
-                              color={LIGHT_PURPLE}
-                            />
-                          </TouchableOpacity>
                         </View>
-                        {errors.location ? (
+
+                        {errors.name ? (
                           <Text style={styles.errorText}>
-                            {errors.location}
+                            {errors.name}
                           </Text>
                         ) : null}
 
-                        {Platform.OS === 'android' &&
-                          locationSuggestions.length > 0 && (
-                            <View style={{ marginBottom: 10 }}>
-                              {locationSuggestions
-                                .slice(0, 5)
-                                .map((item, idx) => (
-                                  <TouchableOpacity
-                                    key={`${item.place_id || idx}`}
-                                    style={styles.suggestionItem}
-                                    onPress={() => {
-                                      const lat = parseFloat(item.lat);
-                                      const lon = parseFloat(item.lon);
-                                      if (isFinite(lat) && isFinite(lon)) {
-                                        setMapRegion({
-                                          latitude: lat,
-                                          longitude: lon,
-                                          latitudeDelta: 0.0922,
-                                          longitudeDelta: 0.0421,
-                                        });
-                                      }
-                                      if (item.display_name) {
-                                        setSelectedPlaceName(
-                                          item.display_name,
-                                        );
-                                        setForm({
-                                          ...form,
-                                          location: item.display_name,
-                                        }); setErrors({ ...errors, location: "" });
-                                        setErrors({ ...errors, location: "" });
-                                      }
-                                    }}
-                                  >
-                                    <Text
-                                      style={styles.suggestionText}
-                                      numberOfLines={1}
-                                    >
-                                      {item.display_name}
-                                    </Text>
-                                  </TouchableOpacity>
-                                ))}
-                            </View>
-                          )}
-
-                        {selectedPlaceName ? (
-                          <Text
-                            style={{
-                              color: "#374151",
-                              fontSize: 12,
-                              marginBottom: 6,
-                            }}
-                            numberOfLines={1}
-                          >
-                            {t("selected")}: {selectedPlaceName}
-                          </Text>
-                        ) : null}
-
-                        <Text style={styles.label}>{t("hostel_type")}</Text>
-                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.hostelType && styles.inputError]}>
+                        <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
+                          Identity Proof Type <Text style={{ color: "#EF4444" }}>*</Text>
+                        </Text>
+                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }, errors.idProofType && styles.inputError]}>
+                          <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                            <FontAwesome name="id-card-o" size={18} color={LIGHT_PURPLE} />
+                          </View>
                           <Picker
-                            selectedValue={form.hostelType}
+                            selectedValue={form.idProofType}
                             onValueChange={(v) => {
-                              setForm({ ...form, hostelType: v });
+                              setForm({
+                                ...form,
+                                idProofType: v,
+                                idProofNumber: "",
+                              });
                               setErrors({
                                 ...errors,
-                                hostelType: validateRequired(v, t("hostel_type")),
+                                idProofType: "",
+                                idProofNumber: "",
                               });
                             }}
                             style={[
                               styles.picker,
-                              { flex: 1, height: 50 },
+                              { flex: 1, height: 50, marginLeft: -10 },
                             ]}
                           >
-                            <Picker.Item label={t("select_type")} value="" />
-                            <Picker.Item label={t("boys")} value="boys" />
-                            <Picker.Item label={t("girls")} value="girls" />
-                            <Picker.Item label={t("coliving")} value="coliving" />
+                            <Picker.Item label="Select ID type" value="" color="gray" />
+                            <Picker.Item label="Aadhaar Card" value="Aadhaar Card" />
+                            <Picker.Item label="PAN Card" value="PAN Card" />
+                            <Picker.Item label="Voter ID" value="Voter ID" />
                           </Picker>
                         </View>
-                        {errors.hostelType ? (
+                        {errors.idProofType ? (
                           <Text style={styles.errorText}>
-                            {errors.hostelType}
+                            {errors.idProofType}
                           </Text>
                         ) : null}
 
-                        <Text style={styles.label}>{t("facilities")}</Text>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            marginBottom: 10,
-                          }}
-                        >
-                          <View
+                        {form.idProofType !== "" && (
+                          <>
+                            <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
+                              {form.idProofType === "Aadhaar Card"
+                                ? "Aadhaar Number"
+                                : form.idProofType === "PAN Card"
+                                  ? "PAN Card Number"
+                                  : "Voter ID Number"}
+                            </Text>
+                            <View
+                              style={[
+                                styles.inputContainer,
+                                styles.inputContainerStep2,
+                                { paddingLeft: 6, height: 50 }
+                              ]}
+                            >
+                              <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                                <FontAwesome name="id-card-o" size={18} color={LIGHT_PURPLE} />
+                              </View>
+                              <TextInput
+                                style={[
+                                  styles.input,
+                                  errors.idProofNumber && styles.inputError,
+                                  { flex: 1 },
+                                ]}
+                                placeholder={
+                                  form.idProofType === "Aadhaar Card"
+                                    ? "Enter Aadhaar number"
+                                    : form.idProofType === "PAN Card"
+                                      ? "Enter PAN number"
+                                      : "Enter Voter ID"
+                                }
+                                placeholderTextColor="gray"
+                                keyboardType={
+                                  form.idProofType === "Aadhaar Card"
+                                    ? "numeric"
+                                    : "default"
+                                }
+                                autoCapitalize={
+                                  form.idProofType === "PAN Card" || form.idProofType === "Voter ID"
+                                    ? "characters"
+                                    : "none"
+                                }
+                                maxLength={
+                                  form.idProofType === "Aadhaar Card"
+                                    ? 12
+                                    : 10
+                                }
+                                value={form.idProofNumber}
+                                onChangeText={(v) => {
+                                  let formatted = v;
+                                  if (form.idProofType === "Aadhaar Card") {
+                                    formatted = v.replace(/[^0-9]/g, "");
+                                  } else if (form.idProofType === "PAN Card" || form.idProofType === "Voter ID") {
+                                    formatted = v.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+                                  }
+                                  setForm({
+                                    ...form,
+                                    idProofNumber: formatted,
+                                  });
+                                  setErrors({
+                                    ...errors,
+                                    idProofNumber: "",
+                                  });
+                                  setIdProofError("");
+
+                                  if (idProofCheckTimeout.current) clearTimeout(idProofCheckTimeout.current);
+                                  idProofCheckTimeout.current = setTimeout(() => {
+                                    const expectedLength = form.idProofType === "Aadhaar Card" ? 12 : 10;
+                                    if (formatted.length === expectedLength) {
+                                      checkIdProofUniqueness(formatted);
+                                    }
+                                  }, 500);
+                                }}
+                              />
+                              {isCheckingIdProof && <ActivityIndicator size="small" color="#7A3FC4" style={{ marginRight: 10 }} />}
+                            </View>
+                            {errors.idProofNumber ? (
+                              <Text style={styles.errorText}>
+                                {errors.idProofNumber}
+                              </Text>
+                            ) : null}
+                          </>
+                        )}
+                      </View>
+
+                      {/* Stay Details Card */}
+                      <View style={styles.sectionCard}>
+                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 20 }}>
+                          <View style={{ width: 44, height: 44, backgroundColor: "#F5F3FF", borderRadius: 12, justifyContent: "center", alignItems: "center", marginRight: 15 }}>
+                            <FontAwesome name="building-o" size={20} color={LIGHT_PURPLE} />
+                          </View>
+                          <View>
+                            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#111827" }}>Stay Details</Text>
+                            <Text style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>Provide the stay information</Text>
+                          </View>
+                        </View>
+
+                        <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>
+                          Stay Type <Text style={{ color: "#EF4444" }}>*</Text>
+                        </Text>
+                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingLeft: 6, height: 50 }, errors.stayType && styles.inputError]}>
+                          <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                            <FontAwesome name="building-o" size={18} color={LIGHT_PURPLE} />
+                          </View>
+                          <Picker
+                            selectedValue={form.stayType}
+                            onValueChange={(v) => {
+                              handleStayTypeChange(v);
+                            }}
                             style={[
-                              styles.inputContainer,
-                              { flex: 1, marginBottom: 0 },
+                              styles.picker,
+                              { flex: 1, height: 50, marginLeft: -10 },
                             ]}
                           >
-                            <TextInput
-                              style={[styles.input, { flex: 1 }]}
-                              placeholder={t("add_new_facility")}
-                              placeholderTextColor="gray"
-                              value={newFacilityText}
-                              onChangeText={setNewFacilityText}
-                            />
-                          </View>
-                          <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={() => {
-                              if (newFacilityText.trim()) {
-                                setCustomFacilities([
-                                  ...customFacilities,
-                                  newFacilityText.trim(),
-                                ]);
-                                setNewFacilityText("");
-                              }
-                            }}
-                          >
-                            <Text style={styles.addButtonText}>+</Text>
-                          </TouchableOpacity>
+                            <Picker.Item label={t("select_stay_type")} value="" color="gray" />
+                            <Picker.Item label={t("hostel")} value="hostel" />
+                            <Picker.Item label={t("apartment")} value="apartment" />
+                            <Picker.Item label={t("commercial")} value="commercial" />
+                          </Picker>
                         </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            flexWrap: "wrap",
-                            marginBottom: 10,
-                          }}
-                        >
-                          {customFacilities.map((facility, index) => (
-                            <View key={index} style={styles.facilityTag}>
-                              <Text style={styles.facilityText}>
-                                {facility}
-                              </Text>
-                              <TouchableOpacity
-                                style={styles.removeButton}
-                                onPress={() => {
-                                  setCustomFacilities(
-                                    customFacilities.filter(
-                                      (_, i) => i !== index,
-                                    ),
-                                  );
+                        {errors.stayType ? (
+                          <Text style={styles.errorText}>{errors.stayType}</Text>
+                        ) : null}
+
+                        {/* HOSTEL */}
+                        {form.stayType === "hostel" && (
+                          <>
+                            <Text style={styles.label}>{t("hostel_name")}</Text>
+                            <View
+                              style={[
+                                styles.inputContainer,
+                                styles.inputContainerStep2,
+                              ]}
+                            >
+                              <TextInput
+                                style={[
+                                  styles.input,
+                                  errors.hostelName && styles.inputError,
+                                  { flex: 1 },
+                                ]}
+                                placeholder={t("enter_hostel_name")}
+                                placeholderTextColor="gray"
+                                value={form.hostelName}
+                                onChangeText={(v) => {
+                                  setForm({ ...form, hostelName: v });
                                 }}
+                                onBlur={() =>
+                                  setErrors({
+                                    ...errors,
+                                    hostelName: validatePropertyName(
+                                      form.hostelName,
+                                    ),
+                                  })
+                                }
+                              />
+                            </View>
+                            {errors.hostelName ? (
+                              <Text style={styles.errorText}>
+                                {errors.hostelName}
+                              </Text>
+                            ) : null}
+
+                            <Text style={[styles.label, { color: "#111827", fontWeight: "600" }]}>Location <Text style={{ color: "#EF4444" }}>*</Text></Text>
+                            <View
+                              style={[
+                                styles.inputContainer,
+                                styles.inputContainerStep2,
+                                { paddingLeft: 6, height: 50 }
+                              ]}
+                            >
+                              <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                                <Ionicons name="location-outline" size={18} color={LIGHT_PURPLE} />
+                              </View>
+                              <TextInput
+                                style={[
+                                  styles.input,
+                                  errors.location && styles.inputError,
+                                  { flex: 1 },
+                                ]}
+                                placeholder="Property Location"
+                                placeholderTextColor="gray"
+                                value={form.location}
+                                onChangeText={(v) => {
+                                  setForm({ ...form, location: v });
+                                  if (errors.location) {
+                                    setErrors({ ...errors, location: '' });
+                                  }
+                                }}
+                                onBlur={() =>
+                                  setErrors({
+                                    ...errors,
+                                    location: validateLocation(form.location),
+                                  })
+                                }
+                              />
+                              <TouchableOpacity
+                                onPress={handleGetCurrentLocation}
+                                style={{ padding: 8 }}
                               >
-                                <Text style={styles.removeButtonText}>-</Text>
+                                <MaterialIcons
+                                  name="my-location"
+                                  size={20}
+                                  color="#4B5563"
+                                />
                               </TouchableOpacity>
                             </View>
-                          ))}
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            flexWrap: "wrap",
-                            marginBottom: 10,
-                          }}
-                        >
-                          {[
-                            t("WiFi") || "WiFi",
-                            t("Mess") || "Mess",
-                            t("Laundry") || "Laundry",
-                            t("Security") || "Security",
-                            t("Parking") || "Parking",
-                          ].map((label) => {
-                            const isSelected =
-                              selectedFacilities.includes(label);
-                            return (
-                              <TouchableOpacity
-                                key={label}
-                                style={[
-                                  styles.facilityTag,
-                                  isSelected && styles.presetSelected,
-                                ]}
-                                onPress={() => {
-                                  const exists =
-                                    selectedFacilities.includes(label);
-                                  setSelectedFacilities(
-                                    exists
-                                      ? selectedFacilities.filter(
-                                        (f) => f !== label,
-                                      )
-                                      : [...selectedFacilities, label],
-                                  );
-                                }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.facilityText,
-                                    isSelected && { color: "#ffffff" },
-                                  ]}
-                                >
-                                  {label}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                        {errors.facilities ? (
-                          <Text style={styles.errorText}>
-                            {errors.facilities}
-                          </Text>
-                        ) : null}
-                        {/* Rent Amount */}
-                        <Text style={styles.label}>Basic Rent / Basic Property Amount</Text>
-                        <View style={[styles.inputContainer, styles.inputContainerStep2]}>
-                          <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 18, marginRight: 8 }}>₹</Text>
-                          <TextInput
-                            style={[styles.input, errors.rent && styles.inputError, { flex: 1 }]}
-                            placeholder="Enter amount"
-                            placeholderTextColor="gray"
-                            keyboardType="numeric"
-                            value={form.rent}
-                            onChangeText={(v) => {
-                              const cleaned = v.replace(/[^0-9]/g, "");
-                              setForm({ ...form, rent: cleaned });
-                              if (cleaned && Number(cleaned) > 0) {
-                                setErrors({ ...errors, rent: "" });
-                              }
-                            }}
-                          />
-                        </View>
-                        {errors.rent ? <Text style={styles.errorText}>{errors.rent}</Text> : null}
+                            {errors.location ? (
+                              <Text style={styles.errorText}>
+                                {errors.location}
+                              </Text>
+                            ) : null}
 
-                      </>
-                    )}
-
-                    {/* APARTMENT */}
-                    {form.stayType === "apartment" && (
-                      <>
-                        <Text style={styles.label}>{t("apartment_name")}</Text>
-                        <View
-                          style={[
-                            styles.inputContainer,
-                            styles.inputContainerStep2,
-                          ]}
-                        >
-                          <TextInput
-                            style={[
-                              styles.input,
-                              errors.apartmentName && styles.inputError,
-                              { flex: 1 },
-                            ]}
-                            placeholder={t("enter_apartment_name")}
-                            placeholderTextColor="gray"
-                            value={form.apartmentName}
-                            onChangeText={(v) => {
-                              setForm({ ...form, apartmentName: v });
-                            }}
-                            onBlur={() =>
-                              setErrors({
-                                ...errors,
-                                apartmentName: validatePropertyName(
-                                  form.apartmentName,
-                                ),
-                              })
-                            }
-                          />
-                        </View>
-                        {errors.apartmentName ? (
-                          <Text style={styles.errorText}>
-                            {errors.apartmentName}
-                          </Text>
-                        ) : null}
-
-                        <Text style={styles.label}>{t("location")}</Text>
-                        <View
-                          style={[
-                            styles.inputContainer,
-                            styles.inputContainerStep2,
-                          ]}
-                        >
-                          <TextInput
-                            style={[
-                              styles.input,
-                              errors.location && styles.inputError,
-                              { flex: 1 },
-                            ]}
-                            placeholder={t("enter_location")}
-                            placeholderTextColor="gray"
-                            value={form.location}
-                            onChangeText={(v) => {
-                              setForm({ ...form, location: v });
-                              if (errors.location) {
-                                setErrors({ ...errors, location: '' });
-                              }
-                            }}
-                            onBlur={() =>
-                              setErrors({
-                                ...errors,
-                                location: validateLocation(form.location),
-                              })
-                            }
-                          />
-                          <TouchableOpacity
-                            onPress={handleGetCurrentLocation}
-                            style={{ padding: 8 }}
-                          >
-                            <MaterialIcons
-                              name='my-location'
-                              size={24}
-                              color='#2563eb'
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={openInGoogleMaps}
-                            style={{ padding: 8 }}
-                          >
-                            <MaterialIcons
-                              name="map"
-                              size={24}
-                              color="gray"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                        {errors.location ? (
-                          <Text style={styles.errorText}>
-                            {errors.location}
-                          </Text>
-                        ) : null}
-
-                        {Platform.OS === "android" &&
-                          locationSuggestions.length > 0 && (
-                            <View style={{ marginBottom: 10 }}>
-                              {locationSuggestions
-                                .slice(0, 5)
-                                .map((item, idx) => (
-                                  <TouchableOpacity
-                                    key={`${item.place_id || idx}`}
-                                    style={styles.suggestionItem}
-                                    onPress={() => {
-                                      const lat = parseFloat(item.lat);
-                                      const lon = parseFloat(item.lon);
-                                      if (isFinite(lat) && isFinite(lon)) {
-                                        setMapRegion({
-                                          latitude: lat,
-                                          longitude: lon,
-                                          latitudeDelta: 0.0922,
-                                          longitudeDelta: 0.0421,
-                                        });
-                                      }
-                                      if (item.display_name) {
-                                        setSelectedPlaceName(
-                                          item.display_name,
-                                        );
-                                        setForm({
-                                          ...form,
-                                          location: item.display_name,
-                                        }); setErrors({ ...errors, location: "" });
-                                      }
-                                    }}
-                                  >
-                                    <View
-                                      style={{
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        justifyContent: "space-between",
-                                      }}
-                                    >
-                                      <Text
-                                        style={styles.suggestionText}
-                                        numberOfLines={1}
-                                      >
-                                        {item.display_name}
-                                      </Text>
+                            {Platform.OS === 'android' &&
+                              locationSuggestions.length > 0 && (
+                                <View style={{ marginBottom: 10 }}>
+                                  {locationSuggestions
+                                    .slice(0, 5)
+                                    .map((item, idx) => (
                                       <TouchableOpacity
-                                        style={{
-                                          paddingHorizontal: 8,
-                                          paddingVertical: 4,
-                                        }}
+                                        key={`${item.place_id || idx}`}
+                                        style={styles.suggestionItem}
                                         onPress={() => {
-                                          const q =
-                                            item.lat && item.lon
-                                              ? `${item.lat},${item.lon}`
-                                              : item.display_name || "";
-                                          if (!q) return;
-                                          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                                            q,
-                                          )}`;
-                                          Linking.openURL(url).catch(
-                                            () => { },
-                                          );
+                                          const lat = parseFloat(item.lat);
+                                          const lon = parseFloat(item.lon);
+                                          if (isFinite(lat) && isFinite(lon)) {
+                                            setMapRegion({
+                                              latitude: lat,
+                                              longitude: lon,
+                                              latitudeDelta: 0.0922,
+                                              longitudeDelta: 0.0421,
+                                            });
+                                          }
+                                          if (item.display_name) {
+                                            setSelectedPlaceName(
+                                              item.display_name,
+                                            );
+                                            setForm({
+                                              ...form,
+                                              location: item.display_name,
+                                            }); setErrors({ ...errors, location: "" });
+                                            setErrors({ ...errors, location: "" });
+                                          }
                                         }}
                                       >
                                         <Text
-                                          style={{
-                                            color: "#2563eb",
-                                            fontWeight: "600",
-                                          }}
+                                          style={styles.suggestionText}
+                                          numberOfLines={1}
                                         >
-                                          {t("open") || "Open"}
+                                          {item.display_name}
                                         </Text>
                                       </TouchableOpacity>
-                                    </View>
-                                  </TouchableOpacity>
-                                ))}
-                            </View>
-                          )}
+                                    ))}
+                                </View>
+                              )}
 
-                        {mapRegion && (
-                          <View style={styles.mapWrap}>
-                            <MapView
-                              provider={PROVIDER_GOOGLE}
-                              style={styles.map}
-                              region={mapRegion}
-                              mapType={mapType}
-                              showsUserLocation
-                              showsMyLocationButton
-                              onPress={(e) =>
-                                onCoordinatePick(e.nativeEvent.coordinate)
-                              }
-                            >
-                              <Marker
-                                coordinate={mapRegion}
-                                pinColor="red"
-                                title={
-                                  selectedPlaceName ||
-                                  form.location ||
-                                  t("selected_location")
-                                }
-                                draggable
-                                onDragEnd={(e) =>
-                                  onCoordinatePick(e.nativeEvent.coordinate)
-                                }
-                              />
-                            </MapView>
-                            <View style={styles.mapControls}>
-                              <TouchableOpacity
-                                style={styles.zoomBtn}
-                                onPress={zoomIn}
-                              >
-                                <Text style={styles.zoomText}>+</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.zoomBtn, { marginTop: 6 }]}
-                                onPress={zoomOut}
-                              >
-                                <Text style={styles.zoomText}>-</Text>
-                              </TouchableOpacity>
-                              <View style={styles.mapToggleWrap}>
-                                <TouchableOpacity
-                                  style={[
-                                    styles.mapToggleBtn,
-                                    mapType === "standard" &&
-                                    styles.mapToggleActive,
-                                  ]}
-                                  onPress={() => setMapType("standard")}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.mapToggleText,
-                                      mapType === "standard" &&
-                                      styles.mapToggleTextActive,
-                                    ]}
-                                  >
-                                    {t("map") || "Map"}
-                                  </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={[
-                                    styles.mapToggleBtn,
-                                    mapType === "satellite" &&
-                                    styles.mapToggleActive,
-                                    { marginLeft: 6 },
-                                  ]}
-                                  onPress={() => setMapType("satellite")}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.mapToggleText,
-                                      mapType === "satellite" &&
-                                      styles.mapToggleTextActive,
-                                    ]}
-                                  >
-                                    {t("sat") || "Sat"}
-                                  </Text>
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-                          </View>
-                        )}
-                        {mapRegion && (
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              marginTop: 8,
-                              marginBottom: 10,
-                            }}
-                          >
-                            <TouchableOpacity
-                              style={styles.mapActionBtn}
-                              onPress={async () => {
-                                try {
-                                  const { status } =
-                                    await Location.requestForegroundPermissionsAsync();
-                                  if (status !== "granted") return;
-                                  const pos =
-                                    await Location.getCurrentPositionAsync(
-                                      {},
-                                    );
-                                  if (pos?.coords) {
-                                    setMapRegion({
-                                      latitude: pos.coords.latitude,
-                                      longitude: pos.coords.longitude,
-                                      latitudeDelta: 0.0922,
-                                      longitudeDelta: 0.0421,
-                                    });
-                                    setSelectedPlaceName(t("current_location") || "Current location");
-                                  }
-                                } catch { }
-                              }}
-                            >
-                              <Text style={styles.mapActionText}>
-                                {t("use_current_location")}
-                              </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.mapActionBtn, { marginLeft: 8 }]}
-                              onPress={openDirections}
-                            >
-                              <Text style={styles.mapActionText}>
-                                {t("navigate")}
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-
-                        <Text style={styles.label}>{t("tenant_type")}</Text>
-                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.tenantType && styles.inputError]}>
-                          <Picker
-                            selectedValue={form.tenantType}
-                            onValueChange={(v) => {
-                              setForm({ ...form, tenantType: v });
-                            }}
-                            style={[
-                              styles.picker,
-                              { flex: 1, height: 50 },
-                            ]}
-                          >
-                            <Picker.Item label={t("select")} value="" />
-                            <Picker.Item label={t("family")} value="family" />
-                            <Picker.Item label={t("bachelors")} value="bachelors" />
-                          </Picker>
-                        </View>
-                        {errors.tenantType ? (
-                          <Text style={styles.errorText}>
-                            {errors.tenantType}
-                          </Text>
-                        ) : null}
-
-                        <Text style={styles.label}>{t("facilities")}</Text>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            marginBottom: 10,
-                          }}
-                        >
-                          <View
-                            style={[
-                              styles.inputContainer,
-                              { flex: 1, marginBottom: 0 },
-                            ]}
-                          >
-                            <TextInput
-                              style={[styles.input, { flex: 1 }]}
-                              placeholder={t("add_new_facility")}
-                              placeholderTextColor="gray"
-                              value={newFacilityText}
-                              onChangeText={setNewFacilityText}
-                            />
-                          </View>
-                          <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={() => {
-                              if (newFacilityText.trim()) {
-                                setCustomFacilities([
-                                  ...customFacilities,
-                                  newFacilityText.trim(),
-                                ]);
-                                setNewFacilityText("");
-                              }
-                            }}
-                          >
-                            <Text style={styles.addButtonText}>+</Text>
-                          </TouchableOpacity>
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            flexWrap: "wrap",
-                            marginBottom: 10,
-                          }}
-                        >
-                          {customFacilities.map((facility, index) => (
-                            <View key={index} style={styles.facilityTag}>
-                              <Text style={styles.facilityText}>
-                                {facility}
-                              </Text>
-                              <TouchableOpacity
-                                style={styles.removeButton}
-                                onPress={() => {
-                                  setCustomFacilities(
-                                    customFacilities.filter(
-                                      (_, i) => i !== index,
-                                    ),
-                                  );
+                            {selectedPlaceName ? (
+                              <Text
+                                style={{
+                                  color: "#374151",
+                                  fontSize: 12,
+                                  marginBottom: 6,
                                 }}
+                                numberOfLines={1}
                               >
-                                <Text style={styles.removeButtonText}>-</Text>
-                              </TouchableOpacity>
-                            </View>
-                          ))}
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            flexWrap: "wrap",
-                            marginBottom: 10,
-                          }}
-                        >
-                          {[
-                            t("Parking") || "Parking",
-                            t("Lift") || "Lift",
-                            t("Power Backup") || "Power Backup",
-                            t("Security") || "Security",
-                            t("Play Area") || "Play Area",
-                          ].map((label) => {
-                            const isSelected =
-                              selectedFacilities.includes(label);
-                            return (
-                              <TouchableOpacity
-                                key={label}
+                                {t("selected")}: {selectedPlaceName}
+                              </Text>
+                            ) : null}
+
+                            <Text style={styles.label}>{t("hostel_type")}</Text>
+                            <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.hostelType && styles.inputError]}>
+                              <Picker
+                                selectedValue={form.hostelType}
+                                onValueChange={(v) => {
+                                  setForm({ ...form, hostelType: v });
+                                  setErrors({
+                                    ...errors,
+                                    hostelType: validateRequired(v, t("hostel_type")),
+                                  });
+                                }}
                                 style={[
-                                  styles.facilityTag,
-                                  isSelected && styles.presetSelected,
+                                  styles.picker,
+                                  { flex: 1, height: 50 },
                                 ]}
-                                onPress={() => {
-                                  const exists =
-                                    selectedFacilities.includes(label);
-                                  setSelectedFacilities(
-                                    exists
-                                      ? selectedFacilities.filter(
-                                        (f) => f !== label,
-                                      )
-                                      : [...selectedFacilities, label],
-                                  );
-                                }}
                               >
-                                <Text
-                                  style={[
-                                    styles.facilityText,
-                                    isSelected && { color: "#ffffff" },
-                                  ]}
-                                >
-                                  {label}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                        {errors.facilities ? (
-                          <Text style={styles.errorText}>
-                            {errors.facilities}
-                          </Text>
-                        ) : null}
-                        {/* Rent Amount */}
-                        <Text style={styles.label}>Basic Rent / Basic Property Amount</Text>
-                        <View style={[styles.inputContainer, styles.inputContainerStep2]}>
-                          <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 18, marginRight: 8 }}>₹</Text>
-                          <TextInput
-                            style={[styles.input, errors.rent && styles.inputError, { flex: 1 }]}
-                            placeholder="Enter amount"
-                            placeholderTextColor="gray"
-                            keyboardType="numeric"
-                            value={form.rent}
-                            onChangeText={(v) => {
-                              const cleaned = v.replace(/[^0-9]/g, "");
-                              setForm({ ...form, rent: cleaned });
-                              if (cleaned && Number(cleaned) > 0) {
-                                setErrors({ ...errors, rent: "" });
-                              }
-                            }}
-                          />
-                        </View>
-                        {errors.rent ? <Text style={styles.errorText}>{errors.rent}</Text> : null}
-                        {/* Furnishing Type - Apartment only */}
-                        <Text style={styles.label}>Furnishing Type</Text>
-                        <View style={{ flexDirection: "row", marginBottom: 10, gap: 8 }}>
-                          {["Fully Furnished", "Semi Furnished", "Unfurnished"].map((option) => (
-                            <TouchableOpacity
-                              key={option}
+                                <Picker.Item label={t("select_type")} value="" />
+                                <Picker.Item label={t("boys")} value="boys" />
+                                <Picker.Item label={t("girls")} value="girls" />
+                                <Picker.Item label={t("coliving")} value="coliving" />
+                              </Picker>
+                            </View>
+                            {errors.hostelType ? (
+                              <Text style={styles.errorText}>
+                                {errors.hostelType}
+                              </Text>
+                            ) : null}
+
+                            <Text style={styles.label}>{t("facilities")}</Text>
+                            <View
                               style={{
-                                flex: 1,
-                                padding: 12,
-                                borderRadius: 12,
-                                borderWidth: 2,
-                                borderColor: form.furnishingType === option ? LIGHT_PURPLE : "#e5e7eb",
-                                backgroundColor: form.furnishingType === option ? "#f5f3ff" : "#fff",
+                                flexDirection: "row",
                                 alignItems: "center",
-                                elevation: form.furnishingType === option ? 3 : 1,
-                              }}
-                              onPress={() => {
-                                setForm({ ...form, furnishingType: option });
-                                setErrors({ ...errors, furnishingType: "" });
+                                marginBottom: 10,
                               }}
                             >
-                              <Text style={{
-                                fontSize: 11,
-                                fontWeight: "700",
-                                color: form.furnishingType === option ? LIGHT_PURPLE : GRAY,
-                                textAlign: "center",
-                              }}>
-                                {option}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                        {errors.furnishingType ? <Text style={styles.errorText}>{errors.furnishingType}</Text> : null}
-                      </>
-                    )}
-
-                    {/* COMMERCIAL */}
-                    {form.stayType === "commercial" && (
-                      <>
-                        <Text style={styles.label}>{t("property_name")}</Text>
-                        <View
-                          style={[
-                            styles.inputContainer,
-                            styles.inputContainerStep2,
-                          ]}
-                        >
-                          <TextInput
-                            style={[
-                              styles.input,
-                              errors.commercialName && styles.inputError,
-                              { flex: 1 },
-                            ]}
-                            placeholder={t("enter_property_name")}
-                            placeholderTextColor="gray"
-                            value={form.commercialName}
-                            onChangeText={(v) => {
-                              setForm({ ...form, commercialName: v });
-                            }}
-                            onBlur={() =>
-                              setErrors({
-                                ...errors,
-                                commercialName: validatePropertyName(
-                                  form.commercialName,
-                                ),
-                              })
-                            }
-                          />
-                        </View>
-                        {errors.commercialName ? (
-                          <Text style={styles.errorText}>
-                            {errors.commercialName}
-                          </Text>
-                        ) : null}
-
-                        <Text style={styles.label}>{t("location")}</Text>
-                        <View
-                          style={[
-                            styles.inputContainer,
-                            styles.inputContainerStep2,
-                          ]}
-                        >
-                          <TextInput
-                            style={[
-                              styles.input,
-                              errors.location && styles.inputError,
-                              { flex: 1 },
-                            ]}
-                            placeholder={t("enter_location")}
-                            placeholderTextColor="gray"
-                            value={form.location}
-                            onChangeText={(v) => {
-                              setForm({ ...form, location: v });
-                              if (errors.location) {
-                                setErrors({ ...errors, location: '' });
-                              }
-                            }}
-                            onBlur={() =>
-                              setErrors({
-                                ...errors,
-                                location: validateLocation(form.location),
-                              })
-                            }
-                          />
-                          <TouchableOpacity
-                            onPress={handleGetCurrentLocation}
-                            style={{ padding: 8 }}
-                          >
-                            <MaterialIcons
-                              name='my-location'
-                              size={24}
-                              color='#2563eb'
-                            />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={openInGoogleMaps}
-                            style={{ padding: 8 }}
-                          >
-                            <MaterialIcons
-                              name="map"
-                              size={24}
-                              color="gray"
-                            />
-                          </TouchableOpacity>
-                        </View>
-                        {errors.location ? (
-                          <Text style={styles.errorText}>
-                            {errors.location}
-                          </Text>
-                        ) : null}
-
-                        {Platform.OS === "android" &&
-                          locationSuggestions.length > 0 && (
-                            <View style={{ marginBottom: 10 }}>
-                              {locationSuggestions
-                                .slice(0, 5)
-                                .map((item, idx) => (
+                              <View
+                                style={[
+                                  styles.inputContainer,
+                                  { flex: 1, marginBottom: 0 },
+                                ]}
+                              >
+                                <TextInput
+                                  style={[styles.input, { flex: 1 }]}
+                                  placeholder={t("add_new_facility")}
+                                  placeholderTextColor="gray"
+                                  value={newFacilityText}
+                                  onChangeText={setNewFacilityText}
+                                />
+                              </View>
+                              <TouchableOpacity
+                                style={styles.addButton}
+                                onPress={() => {
+                                  if (newFacilityText.trim()) {
+                                    setCustomFacilities([
+                                      ...customFacilities,
+                                      newFacilityText.trim(),
+                                    ]);
+                                    setNewFacilityText("");
+                                  }
+                                }}
+                              >
+                                <Text style={styles.addButtonText}>+</Text>
+                              </TouchableOpacity>
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                flexWrap: "wrap",
+                                marginBottom: 10,
+                              }}
+                            >
+                              {customFacilities.map((facility, index) => (
+                                <View key={index} style={styles.facilityTag}>
+                                  <Text style={styles.facilityText}>
+                                    {facility}
+                                  </Text>
                                   <TouchableOpacity
-                                    key={`${item.place_id || idx}`}
-                                    style={styles.suggestionItem}
+                                    style={styles.removeButton}
                                     onPress={() => {
-                                      const lat = parseFloat(item.lat);
-                                      const lon = parseFloat(item.lon);
-                                      if (isFinite(lat) && isFinite(lon)) {
-                                        setMapRegion({
-                                          latitude: lat,
-                                          longitude: lon,
-                                          latitudeDelta: 0.0922,
-                                          longitudeDelta: 0.0421,
-                                        });
-                                      }
-                                      if (item.display_name) {
-                                        setSelectedPlaceName(
-                                          item.display_name,
-                                        );
-                                      }
+                                      setCustomFacilities(
+                                        customFacilities.filter(
+                                          (_, i) => i !== index,
+                                        ),
+                                      );
+                                    }}
+                                  >
+                                    <Text style={styles.removeButtonText}>-</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                flexWrap: "wrap",
+                                marginBottom: 10,
+                              }}
+                            >
+                              {[
+                                t("WiFi") || "WiFi",
+                                t("Mess") || "Mess",
+                                t("Laundry") || "Laundry",
+                                t("Security") || "Security",
+                                t("Parking") || "Parking",
+                                t("AC") || "AC",
+                                t("Gym") || "Gym",
+                                t("TV") || "TV",
+                                t("Hot Water") || "Hot Water",
+                              ].map((label) => {
+                                const isSelected =
+                                  selectedFacilities.includes(label);
+                                return (
+                                  <TouchableOpacity
+                                    key={label}
+                                    style={[
+                                      styles.facilityTag,
+                                      isSelected && styles.presetSelected,
+                                    ]}
+                                    onPress={() => {
+                                      const exists =
+                                        selectedFacilities.includes(label);
+                                      setSelectedFacilities(
+                                        exists
+                                          ? selectedFacilities.filter(
+                                            (f) => f !== label,
+                                          )
+                                          : [...selectedFacilities, label],
+                                      );
                                     }}
                                   >
                                     <Text
-                                      style={styles.suggestionText}
-                                      numberOfLines={1}
+                                      style={[
+                                        styles.facilityText,
+                                        isSelected && { color: "#ffffff" },
+                                      ]}
                                     >
-                                      {item.display_name}
+                                      {label}
                                     </Text>
                                   </TouchableOpacity>
-                                ))}
+                                );
+                              })}
                             </View>
-                          )}
+                            {errors.facilities ? (
+                              <Text style={styles.errorText}>
+                                {errors.facilities}
+                              </Text>
+                            ) : null}
+                            {/* Rent Amount */}
+                            <Text style={styles.label}>Basic Rent / Basic Property Amount</Text>
+                            <View style={[styles.inputContainer, styles.inputContainerStep2]}>
+                              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 18, marginRight: 8 }}>₹</Text>
+                              <TextInput
+                                style={[styles.input, errors.rent && styles.inputError, { flex: 1 }]}
+                                placeholder="Enter amount"
+                                placeholderTextColor="gray"
+                                keyboardType="numeric"
+                                value={form.rent}
+                                onChangeText={(v) => {
+                                  const cleaned = v.replace(/[^0-9]/g, "");
+                                  setForm({ ...form, rent: cleaned });
+                                  if (cleaned && Number(cleaned) > 0) {
+                                    setErrors({ ...errors, rent: "" });
+                                  }
+                                }}
+                              />
+                            </View>
+                            {errors.rent ? <Text style={styles.errorText}>{errors.rent}</Text> : null}
 
-                        {mapRegion && (
-                          <View style={styles.mapWrap}>
-                            <MapView
-                              provider={PROVIDER_GOOGLE}
-                              style={styles.map}
-                              region={mapRegion}
-                              mapType={mapType}
-                              showsUserLocation
-                              showsMyLocationButton
-                              onPress={(e) =>
-                                onCoordinatePick(e.nativeEvent.coordinate)
-                              }
+                          </>
+                        )}
+
+                        {/* APARTMENT */}
+                        {form.stayType === "apartment" && (
+                          <>
+                            <Text style={styles.label}>{t("apartment_name")}</Text>
+                            <View
+                              style={[
+                                styles.inputContainer,
+                                styles.inputContainerStep2,
+                              ]}
                             >
-                              <Marker
-                                coordinate={mapRegion}
-                                pinColor="red"
-                                title={
-                                  selectedPlaceName ||
-                                  form.location ||
-                                  t("selected_location")
-                                }
-                                draggable
-                                onDragEnd={(e) =>
-                                  onCoordinatePick(e.nativeEvent.coordinate)
+                              <TextInput
+                                style={[
+                                  styles.input,
+                                  errors.apartmentName && styles.inputError,
+                                  { flex: 1 },
+                                ]}
+                                placeholder={t("enter_apartment_name")}
+                                placeholderTextColor="gray"
+                                value={form.apartmentName}
+                                onChangeText={(v) => {
+                                  setForm({ ...form, apartmentName: v });
+                                }}
+                                onBlur={() =>
+                                  setErrors({
+                                    ...errors,
+                                    apartmentName: validatePropertyName(
+                                      form.apartmentName,
+                                    ),
+                                  })
                                 }
                               />
-                            </MapView>
-                            <View style={styles.mapControls}>
-                              <TouchableOpacity
-                                style={styles.zoomBtn}
-                                onPress={zoomIn}
-                              >
-                                <Text style={styles.zoomText}>+</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={[styles.zoomBtn, { marginTop: 6 }]}
-                                onPress={zoomOut}
-                              >
-                                <Text style={styles.zoomText}>-</Text>
-                              </TouchableOpacity>
-                              <View style={styles.mapToggleWrap}>
-                                <TouchableOpacity
-                                  style={[
-                                    styles.mapToggleBtn,
-                                    mapType === "standard" &&
-                                    styles.mapToggleActive,
-                                  ]}
-                                  onPress={() => setMapType("standard")}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.mapToggleText,
-                                      mapType === "standard" &&
-                                      styles.mapToggleTextActive,
-                                    ]}
-                                  >
-                                    {t("map") || "Map"}
-                                  </Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={[
-                                    styles.mapToggleBtn,
-                                    mapType === "satellite" &&
-                                    styles.mapToggleActive,
-                                    { marginLeft: 6 },
-                                  ]}
-                                  onPress={() => setMapType("satellite")}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.mapToggleText,
-                                      mapType === "satellite" &&
-                                      styles.mapToggleTextActive,
-                                    ]}
-                                  >
-                                    {t("sat") || "Sat"}
-                                  </Text>
-                                </TouchableOpacity>
-                              </View>
                             </View>
-                          </View>
-                        )}
-                        {mapRegion && (
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              marginTop: 8,
-                              marginBottom: 10,
-                            }}
-                          >
-                            <TouchableOpacity
-                              style={styles.mapActionBtn}
-                              onPress={async () => {
-                                try {
-                                  const { status } =
-                                    await Location.requestForegroundPermissionsAsync();
-                                  if (status !== "granted") return;
-                                  const pos =
-                                    await Location.getCurrentPositionAsync(
-                                      {},
-                                    );
-                                  if (pos?.coords) {
-                                    setMapRegion({
-                                      latitude: pos.coords.latitude,
-                                      longitude: pos.coords.longitude,
-                                      latitudeDelta: 0.0922,
-                                      longitudeDelta: 0.0421,
-                                    });
-                                    setSelectedPlaceName(t("current_location") || "Current location");
-                                  }
-                                } catch { }
-                              }}
-                            >
-                              <Text style={styles.mapActionText}>
-                                {t("use_current_location")}
+                            {errors.apartmentName ? (
+                              <Text style={styles.errorText}>
+                                {errors.apartmentName}
                               </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.mapActionBtn, { marginLeft: 8 }]}
-                              onPress={openDirections}
-                            >
-                              <Text style={styles.mapActionText}>
-                                {t("navigate")}
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                        {selectedPlaceName ? (
-                          <Text
-                            style={{
-                              color: "#374151",
-                              fontSize: 12,
-                              marginBottom: 6,
-                            }}
-                            numberOfLines={1}
-                          >
-                            {t("selected")}: {selectedPlaceName}
-                          </Text>
-                        ) : null}
+                            ) : null}
 
-                        <Text style={styles.label}>{t("usage")}</Text>
-                        <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.usage && styles.inputError]}>
-                          <Picker
-                            selectedValue={form.usage}
-                            onValueChange={(v) => {
-                              setForm({ ...form, usage: v });
-                            }}
-                            style={[
-                              styles.picker,
-                              { flex: 1, height: 50 },
-                            ]}
-                          >
-                            <Picker.Item label={t("select")} value="" />
-                            <Picker.Item label={t("lease")} value="lease" />
-                            <Picker.Item label={t("rent")} value="rent" />
-                          </Picker>
-                        </View>
-                        {errors.usage ? (
-                          <Text style={styles.errorText}>{errors.usage}</Text>
-                        ) : null}
-
-                        <Text style={styles.label}>{t("facilities")}</Text>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            alignItems: "center",
-                            marginBottom: 10,
-                          }}
-                        >
-                          <View
-                            style={[
-                              styles.inputContainer,
-                              { flex: 1, marginBottom: 0 },
-                            ]}
-                          >
-                            <TextInput
-                              style={[styles.input, { flex: 1 }]}
-                              placeholder={t("add_new_facility")}
-                              placeholderTextColor="gray"
-                              value={newFacilityText}
-                              onChangeText={setNewFacilityText}
-                            />
-                          </View>
-                          <TouchableOpacity
-                            style={styles.addButton}
-                            onPress={() => {
-                              if (newFacilityText.trim()) {
-                                setCustomFacilities([
-                                  ...customFacilities,
-                                  newFacilityText.trim(),
-                                ]);
-                                setNewFacilityText("");
-                              }
-                            }}
-                          >
-                            <Text style={styles.addButtonText}>+</Text>
-                          </TouchableOpacity>
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            flexWrap: "wrap",
-                            marginBottom: 10,
-                          }}
-                        >
-                          {customFacilities.map((facility, index) => (
-                            <View key={index} style={styles.facilityTag}>
-                              <Text style={styles.facilityText}>
-                                {facility}
-                              </Text>
-                              <TouchableOpacity
-                                style={styles.removeButton}
-                                onPress={() => {
-                                  setCustomFacilities(
-                                    customFacilities.filter(
-                                      (_, i) => i !== index,
-                                    ),
-                                  );
-                                }}
-                              >
-                                <Text style={styles.removeButtonText}>-</Text>
-                              </TouchableOpacity>
-                            </View>
-                          ))}
-                        </View>
-                        <View
-                          style={{
-                            flexDirection: "row",
-                            flexWrap: "wrap",
-                            marginBottom: 10,
-                          }}
-                        >
-                          {[
-                            t("Water") || "Water",
-                            t("Parking") || "Parking",
-                            t("Lift") || "Lift",
-                            t("AC") || "AC",
-                            t("Non AC") || "Non AC",
-                            t("Power Backup") || "Power Backup",
-                          ].map((label) => {
-                            const isSelected =
-                              selectedFacilities.includes(label);
-                            return (
-                              <TouchableOpacity
-                                key={label}
+                            <Text style={styles.label}>{t("location")}</Text>
+                            <View
+                              style={[
+                                styles.inputContainer,
+                                styles.inputContainerStep2,
+                              ]}
+                            >
+                              <TextInput
                                 style={[
-                                  styles.facilityTag,
-                                  isSelected && styles.presetSelected,
+                                  styles.input,
+                                  errors.location && styles.inputError,
+                                  { flex: 1 },
                                 ]}
-                                onPress={() => {
-                                  const exists =
-                                    selectedFacilities.includes(label);
-                                  setSelectedFacilities(
-                                    exists
-                                      ? selectedFacilities.filter(
-                                        (f) => f !== label,
-                                      )
-                                      : [...selectedFacilities, label],
-                                  );
+                                placeholder={t("enter_location")}
+                                placeholderTextColor="gray"
+                                value={form.location}
+                                onChangeText={(v) => {
+                                  setForm({ ...form, location: v });
+                                  if (errors.location) {
+                                    setErrors({ ...errors, location: '' });
+                                  }
                                 }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.facilityText,
-                                    isSelected && { color: "#ffffff" },
-                                  ]}
-                                >
-                                  {label}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                        {errors.facilities ? (
-                          <Text style={styles.errorText}>
-                            {errors.facilities}
-                          </Text>
-                        ) : null}
-                        {/* Rent Amount */}
-                        <Text style={styles.label}>Basic Rent / Basic Property Amount</Text>
-                        <View style={[styles.inputContainer, styles.inputContainerStep2]}>
-                          <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 18, marginRight: 8 }}>₹</Text>
-                          <TextInput
-                            style={[styles.input, errors.rent && styles.inputError, { flex: 1 }]}
-                            placeholder="Enter amount"
-                            placeholderTextColor="gray"
-                            keyboardType="numeric"
-                            value={form.rent}
-                            onChangeText={(v) => {
-                              const cleaned = v.replace(/[^0-9]/g, "");
-                              setForm({ ...form, rent: cleaned });
-                              if (cleaned && Number(cleaned) > 0) {
-                                setErrors({ ...errors, rent: "" });
-                              }
-                            }}
-                          />
-                        </View>
-                        {errors.rent ? <Text style={styles.errorText}>{errors.rent}</Text> : null}
-                      </>
-                    )}
-
-                    {/* ===== COVER IMAGE UPLOAD ===== */}
-                    {form.stayType !== "" && (
-                      <View style={{ marginTop: 8, marginBottom: 4 }}>
-                        {/* Section Header */}
-                        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                          <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                            <Ionicons name="image" size={18} color="#7C3AED" />
-                          </View>
-                          <View>
-                            <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Cover Image</Text>
-                            <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 1 }}>Used as the main thumbnail</Text>
-                          </View>
-                        </View>
-
-                        {form.documents.coverImage ? (
-                          <View style={{
-                            borderRadius: 20, overflow: "hidden",
-                            borderWidth: 1.5, borderColor: "#DDD6FE",
-                            shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 },
-                            shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
-                            marginBottom: 8,
-                          }}>
-                            <Image
-                              source={{ uri: form.documents.coverImage.uri }}
-                              style={{ width: "100%", height: 180 }}
-                              resizeMode="cover"
-                            />
-                            {/* Overlay bar */}
-                            <View style={{
-                              position: "absolute", bottom: 0, left: 0, right: 0,
-                              backgroundColor: "rgba(0,0,0,0.45)",
-                              flexDirection: "row", alignItems: "center",
-                              paddingVertical: 10, paddingHorizontal: 14,
-                            }}>
-                              <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
-                                <Ionicons name="checkmark-circle" size={16} color="#34D399" />
-                                <Text style={{ fontSize: 13, color: "#FFFFFF", marginLeft: 6, fontWeight: "600" }}>Cover image uploaded</Text>
-                              </View>
+                                onBlur={() =>
+                                  setErrors({
+                                    ...errors,
+                                    location: validateLocation(form.location),
+                                  })
+                                }
+                              />
                               <TouchableOpacity
-                                onPress={() => openImagePicker("coverImage")}
-                                style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10 }}
+                                onPress={handleGetCurrentLocation}
+                                style={{ padding: 8 }}
                               >
-                                <Ionicons name="pencil" size={14} color="#FFF" />
-                                <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "600", marginLeft: 4 }}>Change</Text>
+                                <MaterialIcons
+                                  name='my-location'
+                                  size={24}
+                                  color='#2563eb'
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={openInGoogleMaps}
+                                style={{ padding: 8 }}
+                              >
+                                <MaterialIcons
+                                  name="map"
+                                  size={24}
+                                  color="gray"
+                                />
                               </TouchableOpacity>
                             </View>
-                          </View>
-                        ) : (
-                          <TouchableOpacity
-                            style={{
-                              borderRadius: 20,
-                              borderWidth: 2,
-                              borderStyle: "dashed",
-                              borderColor: errors.document_coverImage ? "#EF4444" : "#C4B5FD",
-                              backgroundColor: "#FAFAFF",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              paddingVertical: 32,
-                              marginBottom: 8,
-                              shadowColor: "#7C3AED",
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.06,
-                              shadowRadius: 8,
-                              elevation: 1,
-                            }}
-                            onPress={() => openImagePicker("coverImage")}
-                            activeOpacity={0.8}
-                          >
-                            <View style={{
-                              width: 68, height: 68, borderRadius: 34,
-                              backgroundColor: "#F5F3FF",
-                              justifyContent: "center", alignItems: "center",
-                              marginBottom: 14,
-                              shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 },
-                              shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
-                            }}>
-                              <Ionicons name="cloud-upload-outline" size={32} color="#7C3AED" />
-                            </View>
-                            <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E1B4B", marginBottom: 4 }}>Upload Cover Image</Text>
-                            <Text style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 2 }}>Recommended: 16:9 ratio</Text>
-                            <Text style={{ fontSize: 11, color: "#C4B5FD", fontWeight: "500" }}>JPG, PNG • Max 5 MB</Text>
-                          </TouchableOpacity>
-                        )}
-                        {errors.document_coverImage ? (
-                          <Text style={styles.errorText}>{errors.document_coverImage}</Text>
-                        ) : null}
-                      </View>
-                    )}
-                    {/* ===== PROPERTY GALLERY ===== */}
-                    {form.stayType !== "" && (
-                      <View style={{ marginTop: 8, marginBottom: 8 }}>
-                        {/* Section Header */}
-                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                          <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-                              <Ionicons name="images" size={18} color="#7C3AED" />
-                            </View>
-                            <View>
-                              <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Property Gallery</Text>
-                              <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 1 }}>Upload room & property photos</Text>
-                            </View>
-                          </View>
-                          {/* Photo count badge */}
-                          {Array.isArray(form.documents.homePics) && form.documents.homePics.length > 0 && (
-                            <View style={{ backgroundColor: "#7C3AED", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
-                              <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>{form.documents.homePics.length}/10</Text>
-                            </View>
-                          )}
-                        </View>
+                            {errors.location ? (
+                              <Text style={styles.errorText}>
+                                {errors.location}
+                              </Text>
+                            ) : null}
 
-                        {/* Upload Card */}
-                        <TouchableOpacity
-                          style={{
-                            borderRadius: 20,
-                            borderWidth: 2,
-                            borderStyle: "dashed",
-                            borderColor: errors.document_homePics ? "#EF4444" : "#DDD6FE",
-                            backgroundColor: "#FAFAFF",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            paddingVertical: 26,
-                            marginBottom: 12,
-                            shadowColor: "#7C3AED",
-                            shadowOffset: { width: 0, height: 2 },
-                            shadowOpacity: 0.06,
-                            shadowRadius: 8,
-                            elevation: 1,
-                          }}
-                          onPress={() => openImagePicker("homePics")}
-                          activeOpacity={0.8}
-                        >
-                          <View style={{
-                            width: 64, height: 64, borderRadius: 32,
-                            backgroundColor: "#F5F3FF",
-                            justifyContent: "center", alignItems: "center",
-                            marginBottom: 12,
-                            shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 },
-                            shadowOpacity: 0.14, shadowRadius: 8, elevation: 3,
-                          }}>
-                            <Ionicons name="images-outline" size={30} color="#7C3AED" />
-                          </View>
-                          <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E1B4B", marginBottom: 4 }}>Upload Property Gallery</Text>
-                          <Text style={{ fontSize: 12, color: "#9CA3AF" }}>Maximum 10 Photos • JPG, PNG</Text>
-                        </TouchableOpacity>
+                            {Platform.OS === "android" &&
+                              locationSuggestions.length > 0 && (
+                                <View style={{ marginBottom: 10 }}>
+                                  {locationSuggestions
+                                    .slice(0, 5)
+                                    .map((item, idx) => (
+                                      <TouchableOpacity
+                                        key={`${item.place_id || idx}`}
+                                        style={styles.suggestionItem}
+                                        onPress={() => {
+                                          const lat = parseFloat(item.lat);
+                                          const lon = parseFloat(item.lon);
+                                          if (isFinite(lat) && isFinite(lon)) {
+                                            setMapRegion({
+                                              latitude: lat,
+                                              longitude: lon,
+                                              latitudeDelta: 0.0922,
+                                              longitudeDelta: 0.0421,
+                                            });
+                                          }
+                                          if (item.display_name) {
+                                            setSelectedPlaceName(
+                                              item.display_name,
+                                            );
+                                            setForm({
+                                              ...form,
+                                              location: item.display_name,
+                                            }); setErrors({ ...errors, location: "" });
+                                          }
+                                        }}
+                                      >
+                                        <View
+                                          style={{
+                                            flexDirection: "row",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                          }}
+                                        >
+                                          <Text
+                                            style={styles.suggestionText}
+                                            numberOfLines={1}
+                                          >
+                                            {item.display_name}
+                                          </Text>
+                                          <TouchableOpacity
+                                            style={{
+                                              paddingHorizontal: 8,
+                                              paddingVertical: 4,
+                                            }}
+                                            onPress={() => {
+                                              const q =
+                                                item.lat && item.lon
+                                                  ? `${item.lat},${item.lon}`
+                                                  : item.display_name || "";
+                                              if (!q) return;
+                                              const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                                                q,
+                                              )}`;
+                                              Linking.openURL(url).catch(
+                                                () => { },
+                                              );
+                                            }}
+                                          >
+                                            <Text
+                                              style={{
+                                                color: "#2563eb",
+                                                fontWeight: "600",
+                                              }}
+                                            >
+                                              {t("open") || "Open"}
+                                            </Text>
+                                          </TouchableOpacity>
+                                        </View>
+                                      </TouchableOpacity>
+                                    ))}
+                                </View>
+                              )}
 
-                        {errors.document_homePics ? (
-                          <Text style={styles.errorText}>{errors.document_homePics}</Text>
-                        ) : null}
-
-                        {/* Uploaded Images Grid */}
-                        {Array.isArray(form.documents.homePics) && form.documents.homePics.length > 0 && (
-                          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                            {form.documents.homePics.map((img, idx) => (
-                              <View key={idx} style={{ width: "30.8%" }}>
-                                <View style={{ borderRadius: 14, overflow: "hidden", position: "relative" }}>
-                                  <Image
-                                    source={{ uri: img.uri }}
-                                    style={{ width: "100%", aspectRatio: 1 }}
-                                    resizeMode="cover"
+                            {mapRegion && (
+                              <View style={styles.mapWrap}>
+                                <MapView
+                                  provider={PROVIDER_GOOGLE}
+                                  style={styles.map}
+                                  region={mapRegion}
+                                  mapType={mapType}
+                                  showsUserLocation
+                                  showsMyLocationButton
+                                  onPress={(e) =>
+                                    onCoordinatePick(e.nativeEvent.coordinate)
+                                  }
+                                >
+                                  <Marker
+                                    coordinate={mapRegion}
+                                    pinColor="red"
+                                    title={
+                                      selectedPlaceName ||
+                                      form.location ||
+                                      t("selected_location")
+                                    }
+                                    draggable
+                                    onDragEnd={(e) =>
+                                      onCoordinatePick(e.nativeEvent.coordinate)
+                                    }
                                   />
-                                  {/* Dark overlay on image bottom */}
-                                  <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 30, backgroundColor: "rgba(0,0,0,0.3)" }} />
-                                  {/* Remove Button */}
+                                </MapView>
+                                <View style={styles.mapControls}>
                                   <TouchableOpacity
-                                    style={{
-                                      position: "absolute", top: 5, right: 5,
-                                      backgroundColor: "rgba(239,68,68,0.9)",
-                                      borderRadius: 10, width: 22, height: 22,
-                                      alignItems: "center", justifyContent: "center",
-                                    }}
-                                    onPress={() => {
-                                      const current = form.documents.homePics || [];
-                                      const updated = current.filter((_, i) => i !== idx);
-                                      const newErrors = { ...errors };
-                                      if (updated.length === 0) newErrors.document_homePics = t("property_images_required");
-                                      else delete newErrors.document_homePics;
-                                      setForm({ ...form, documents: { ...form.documents, homePics: updated } });
-                                      setErrors(newErrors);
-                                    }}
+                                    style={styles.zoomBtn}
+                                    onPress={zoomIn}
                                   >
-                                    <Ionicons name="close" size={13} color="#FFF" />
+                                    <Text style={styles.zoomText}>+</Text>
                                   </TouchableOpacity>
-                                  {/* Index label */}
-                                  <View style={{ position: "absolute", bottom: 4, left: 6 }}>
-                                    <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "700" }}>#{idx + 1}</Text>
+                                  <TouchableOpacity
+                                    style={[styles.zoomBtn, { marginTop: 6 }]}
+                                    onPress={zoomOut}
+                                  >
+                                    <Text style={styles.zoomText}>-</Text>
+                                  </TouchableOpacity>
+                                  <View style={styles.mapToggleWrap}>
+                                    <TouchableOpacity
+                                      style={[
+                                        styles.mapToggleBtn,
+                                        mapType === "standard" &&
+                                        styles.mapToggleActive,
+                                      ]}
+                                      onPress={() => setMapType("standard")}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.mapToggleText,
+                                          mapType === "standard" &&
+                                          styles.mapToggleTextActive,
+                                        ]}
+                                      >
+                                        {t("map") || "Map"}
+                                      </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      style={[
+                                        styles.mapToggleBtn,
+                                        mapType === "satellite" &&
+                                        styles.mapToggleActive,
+                                        { marginLeft: 6 },
+                                      ]}
+                                      onPress={() => setMapType("satellite")}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.mapToggleText,
+                                          mapType === "satellite" &&
+                                          styles.mapToggleTextActive,
+                                        ]}
+                                      >
+                                        {t("sat") || "Sat"}
+                                      </Text>
+                                    </TouchableOpacity>
                                   </View>
                                 </View>
                               </View>
-                            ))}
-                            {/* Add more button */}
-                            {form.documents.homePics.length < 10 && (
+                            )}
+                            {mapRegion && (
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  marginTop: 8,
+                                  marginBottom: 10,
+                                }}
+                              >
+                                <TouchableOpacity
+                                  style={styles.mapActionBtn}
+                                  onPress={async () => {
+                                    try {
+                                      const { status } =
+                                        await Location.requestForegroundPermissionsAsync();
+                                      if (status !== "granted") return;
+                                      const pos =
+                                        await Location.getCurrentPositionAsync(
+                                          {},
+                                        );
+                                      if (pos?.coords) {
+                                        setMapRegion({
+                                          latitude: pos.coords.latitude,
+                                          longitude: pos.coords.longitude,
+                                          latitudeDelta: 0.0922,
+                                          longitudeDelta: 0.0421,
+                                        });
+                                        setSelectedPlaceName(t("current_location") || "Current location");
+                                      }
+                                    } catch { }
+                                  }}
+                                >
+                                  <Text style={styles.mapActionText}>
+                                    {t("use_current_location")}
+                                  </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[styles.mapActionBtn, { marginLeft: 8 }]}
+                                  onPress={openDirections}
+                                >
+                                  <Text style={styles.mapActionText}>
+                                    {t("navigate")}
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+
+                            <Text style={styles.label}>{t("tenant_type")}</Text>
+                            <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.tenantType && styles.inputError]}>
+                              <Picker
+                                selectedValue={form.tenantType}
+                                onValueChange={(v) => {
+                                  setForm({ ...form, tenantType: v });
+                                }}
+                                style={[
+                                  styles.picker,
+                                  { flex: 1, height: 50 },
+                                ]}
+                              >
+                                <Picker.Item label={t("select")} value="" />
+                                <Picker.Item label={t("family")} value="family" />
+                                <Picker.Item label={t("bachelors")} value="bachelors" />
+                              </Picker>
+                            </View>
+                            {errors.tenantType ? (
+                              <Text style={styles.errorText}>
+                                {errors.tenantType}
+                              </Text>
+                            ) : null}
+
+                            <Text style={styles.label}>{t("facilities")}</Text>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginBottom: 10,
+                              }}
+                            >
+                              <View
+                                style={[
+                                  styles.inputContainer,
+                                  { flex: 1, marginBottom: 0 },
+                                ]}
+                              >
+                                <TextInput
+                                  style={[styles.input, { flex: 1 }]}
+                                  placeholder={t("add_new_facility")}
+                                  placeholderTextColor="gray"
+                                  value={newFacilityText}
+                                  onChangeText={setNewFacilityText}
+                                />
+                              </View>
+                              <TouchableOpacity
+                                style={styles.addButton}
+                                onPress={() => {
+                                  if (newFacilityText.trim()) {
+                                    setCustomFacilities([
+                                      ...customFacilities,
+                                      newFacilityText.trim(),
+                                    ]);
+                                    setNewFacilityText("");
+                                  }
+                                }}
+                              >
+                                <Text style={styles.addButtonText}>+</Text>
+                              </TouchableOpacity>
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                flexWrap: "wrap",
+                                marginBottom: 10,
+                              }}
+                            >
+                              {customFacilities.map((facility, index) => (
+                                <View key={index} style={styles.facilityTag}>
+                                  <Text style={styles.facilityText}>
+                                    {facility}
+                                  </Text>
+                                  <TouchableOpacity
+                                    style={styles.removeButton}
+                                    onPress={() => {
+                                      setCustomFacilities(
+                                        customFacilities.filter(
+                                          (_, i) => i !== index,
+                                        ),
+                                      );
+                                    }}
+                                  >
+                                    <Text style={styles.removeButtonText}>-</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                flexWrap: "wrap",
+                                marginBottom: 10,
+                              }}
+                            >
+                              {[
+                                t("Parking") || "Parking",
+                                t("Lift") || "Lift",
+                                t("Power Backup") || "Power Backup",
+                                t("Security") || "Security",
+                                t("Play Area") || "Play Area",
+                                t("Gym") || "Gym",
+                                t("Swimming Pool") || "Swimming Pool",
+                                t("Club House") || "Club House",
+                              ].map((label) => {
+                                const isSelected =
+                                  selectedFacilities.includes(label);
+                                return (
+                                  <TouchableOpacity
+                                    key={label}
+                                    style={[
+                                      styles.facilityTag,
+                                      isSelected && styles.presetSelected,
+                                    ]}
+                                    onPress={() => {
+                                      const exists =
+                                        selectedFacilities.includes(label);
+                                      setSelectedFacilities(
+                                        exists
+                                          ? selectedFacilities.filter(
+                                            (f) => f !== label,
+                                          )
+                                          : [...selectedFacilities, label],
+                                      );
+                                    }}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.facilityText,
+                                        isSelected && { color: "#ffffff" },
+                                      ]}
+                                    >
+                                      {label}
+                                    </Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </View>
+                            {errors.facilities ? (
+                              <Text style={styles.errorText}>
+                                {errors.facilities}
+                              </Text>
+                            ) : null}
+                            {/* Rent Amount */}
+                            <Text style={styles.label}>Basic Rent / Basic Property Amount</Text>
+                            <View style={[styles.inputContainer, styles.inputContainerStep2]}>
+                              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 18, marginRight: 8 }}>₹</Text>
+                              <TextInput
+                                style={[styles.input, errors.rent && styles.inputError, { flex: 1 }]}
+                                placeholder="Enter amount"
+                                placeholderTextColor="gray"
+                                keyboardType="numeric"
+                                value={form.rent}
+                                onChangeText={(v) => {
+                                  const cleaned = v.replace(/[^0-9]/g, "");
+                                  setForm({ ...form, rent: cleaned });
+                                  if (cleaned && Number(cleaned) > 0) {
+                                    setErrors({ ...errors, rent: "" });
+                                  }
+                                }}
+                              />
+                            </View>
+                            {errors.rent ? <Text style={styles.errorText}>{errors.rent}</Text> : null}
+                            {/* Furnishing Type - Apartment only */}
+                            <Text style={styles.label}>Furnishing Type</Text>
+                            <View style={{ flexDirection: "row", marginBottom: 10, gap: 8 }}>
+                              {["Fully Furnished", "Semi Furnished", "Unfurnished"].map((option) => (
+                                <TouchableOpacity
+                                  key={option}
+                                  style={{
+                                    flex: 1,
+                                    padding: 12,
+                                    borderRadius: 12,
+                                    borderWidth: 2,
+                                    borderColor: form.furnishingType === option ? LIGHT_PURPLE : "#e5e7eb",
+                                    backgroundColor: form.furnishingType === option ? "#f5f3ff" : "#fff",
+                                    alignItems: "center",
+                                    elevation: form.furnishingType === option ? 3 : 1,
+                                  }}
+                                  onPress={() => {
+                                    setForm({ ...form, furnishingType: option });
+                                    setErrors({ ...errors, furnishingType: "" });
+                                  }}
+                                >
+                                  <Text style={{
+                                    fontSize: 11,
+                                    fontWeight: "700",
+                                    color: form.furnishingType === option ? LIGHT_PURPLE : GRAY,
+                                    textAlign: "center",
+                                  }}>
+                                    {option}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                            {errors.furnishingType ? <Text style={styles.errorText}>{errors.furnishingType}</Text> : null}
+                          </>
+                        )}
+
+                        {/* COMMERCIAL */}
+                        {form.stayType === "commercial" && (
+                          <>
+                            <Text style={styles.label}>{t("property_name")}</Text>
+                            <View
+                              style={[
+                                styles.inputContainer,
+                                styles.inputContainerStep2,
+                              ]}
+                            >
+                              <TextInput
+                                style={[
+                                  styles.input,
+                                  errors.commercialName && styles.inputError,
+                                  { flex: 1 },
+                                ]}
+                                placeholder={t("enter_property_name")}
+                                placeholderTextColor="gray"
+                                value={form.commercialName}
+                                onChangeText={(v) => {
+                                  setForm({ ...form, commercialName: v });
+                                }}
+                                onBlur={() =>
+                                  setErrors({
+                                    ...errors,
+                                    commercialName: validatePropertyName(
+                                      form.commercialName,
+                                    ),
+                                  })
+                                }
+                              />
+                            </View>
+                            {errors.commercialName ? (
+                              <Text style={styles.errorText}>
+                                {errors.commercialName}
+                              </Text>
+                            ) : null}
+
+                            <Text style={styles.label}>{t("location")}</Text>
+                            <View
+                              style={[
+                                styles.inputContainer,
+                                styles.inputContainerStep2,
+                              ]}
+                            >
+                              <TextInput
+                                style={[
+                                  styles.input,
+                                  errors.location && styles.inputError,
+                                  { flex: 1 },
+                                ]}
+                                placeholder={t("enter_location")}
+                                placeholderTextColor="gray"
+                                value={form.location}
+                                onChangeText={(v) => {
+                                  setForm({ ...form, location: v });
+                                  if (errors.location) {
+                                    setErrors({ ...errors, location: '' });
+                                  }
+                                }}
+                                onBlur={() =>
+                                  setErrors({
+                                    ...errors,
+                                    location: validateLocation(form.location),
+                                  })
+                                }
+                              />
+                              <TouchableOpacity
+                                onPress={handleGetCurrentLocation}
+                                style={{ padding: 8 }}
+                              >
+                                <MaterialIcons
+                                  name='my-location'
+                                  size={24}
+                                  color='#2563eb'
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={openInGoogleMaps}
+                                style={{ padding: 8 }}
+                              >
+                                <MaterialIcons
+                                  name="map"
+                                  size={24}
+                                  color="gray"
+                                />
+                              </TouchableOpacity>
+                            </View>
+                            {errors.location ? (
+                              <Text style={styles.errorText}>
+                                {errors.location}
+                              </Text>
+                            ) : null}
+
+                            {Platform.OS === "android" &&
+                              locationSuggestions.length > 0 && (
+                                <View style={{ marginBottom: 10 }}>
+                                  {locationSuggestions
+                                    .slice(0, 5)
+                                    .map((item, idx) => (
+                                      <TouchableOpacity
+                                        key={`${item.place_id || idx}`}
+                                        style={styles.suggestionItem}
+                                        onPress={() => {
+                                          const lat = parseFloat(item.lat);
+                                          const lon = parseFloat(item.lon);
+                                          if (isFinite(lat) && isFinite(lon)) {
+                                            setMapRegion({
+                                              latitude: lat,
+                                              longitude: lon,
+                                              latitudeDelta: 0.0922,
+                                              longitudeDelta: 0.0421,
+                                            });
+                                          }
+                                          if (item.display_name) {
+                                            setSelectedPlaceName(
+                                              item.display_name,
+                                            );
+                                          }
+                                        }}
+                                      >
+                                        <Text
+                                          style={styles.suggestionText}
+                                          numberOfLines={1}
+                                        >
+                                          {item.display_name}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    ))}
+                                </View>
+                              )}
+
+                            {mapRegion && (
+                              <View style={styles.mapWrap}>
+                                <MapView
+                                  provider={PROVIDER_GOOGLE}
+                                  style={styles.map}
+                                  region={mapRegion}
+                                  mapType={mapType}
+                                  showsUserLocation
+                                  showsMyLocationButton
+                                  onPress={(e) =>
+                                    onCoordinatePick(e.nativeEvent.coordinate)
+                                  }
+                                >
+                                  <Marker
+                                    coordinate={mapRegion}
+                                    pinColor="red"
+                                    title={
+                                      selectedPlaceName ||
+                                      form.location ||
+                                      t("selected_location")
+                                    }
+                                    draggable
+                                    onDragEnd={(e) =>
+                                      onCoordinatePick(e.nativeEvent.coordinate)
+                                    }
+                                  />
+                                </MapView>
+                                <View style={styles.mapControls}>
+                                  <TouchableOpacity
+                                    style={styles.zoomBtn}
+                                    onPress={zoomIn}
+                                  >
+                                    <Text style={styles.zoomText}>+</Text>
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[styles.zoomBtn, { marginTop: 6 }]}
+                                    onPress={zoomOut}
+                                  >
+                                    <Text style={styles.zoomText}>-</Text>
+                                  </TouchableOpacity>
+                                  <View style={styles.mapToggleWrap}>
+                                    <TouchableOpacity
+                                      style={[
+                                        styles.mapToggleBtn,
+                                        mapType === "standard" &&
+                                        styles.mapToggleActive,
+                                      ]}
+                                      onPress={() => setMapType("standard")}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.mapToggleText,
+                                          mapType === "standard" &&
+                                          styles.mapToggleTextActive,
+                                        ]}
+                                      >
+                                        {t("map") || "Map"}
+                                      </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      style={[
+                                        styles.mapToggleBtn,
+                                        mapType === "satellite" &&
+                                        styles.mapToggleActive,
+                                        { marginLeft: 6 },
+                                      ]}
+                                      onPress={() => setMapType("satellite")}
+                                    >
+                                      <Text
+                                        style={[
+                                          styles.mapToggleText,
+                                          mapType === "satellite" &&
+                                          styles.mapToggleTextActive,
+                                        ]}
+                                      >
+                                        {t("sat") || "Sat"}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  </View>
+                                </View>
+                              </View>
+                            )}
+                            {mapRegion && (
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  marginTop: 8,
+                                  marginBottom: 10,
+                                }}
+                              >
+                                <TouchableOpacity
+                                  style={styles.mapActionBtn}
+                                  onPress={async () => {
+                                    try {
+                                      const { status } =
+                                        await Location.requestForegroundPermissionsAsync();
+                                      if (status !== "granted") return;
+                                      const pos =
+                                        await Location.getCurrentPositionAsync(
+                                          {},
+                                        );
+                                      if (pos?.coords) {
+                                        setMapRegion({
+                                          latitude: pos.coords.latitude,
+                                          longitude: pos.coords.longitude,
+                                          latitudeDelta: 0.0922,
+                                          longitudeDelta: 0.0421,
+                                        });
+                                        setSelectedPlaceName(t("current_location") || "Current location");
+                                      }
+                                    } catch { }
+                                  }}
+                                >
+                                  <Text style={styles.mapActionText}>
+                                    {t("use_current_location")}
+                                  </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[styles.mapActionBtn, { marginLeft: 8 }]}
+                                  onPress={openDirections}
+                                >
+                                  <Text style={styles.mapActionText}>
+                                    {t("navigate")}
+                                  </Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                            {selectedPlaceName ? (
+                              <Text
+                                style={{
+                                  color: "#374151",
+                                  fontSize: 12,
+                                  marginBottom: 6,
+                                }}
+                                numberOfLines={1}
+                              >
+                                {t("selected")}: {selectedPlaceName}
+                              </Text>
+                            ) : null}
+
+                            <Text style={styles.label}>{t("usage")}</Text>
+                            <View style={[styles.inputContainer, styles.inputContainerStep2, { paddingHorizontal: 0 }, errors.usage && styles.inputError]}>
+                              <Picker
+                                selectedValue={form.usage}
+                                onValueChange={(v) => {
+                                  setForm({ ...form, usage: v });
+                                }}
+                                style={[
+                                  styles.picker,
+                                  { flex: 1, height: 50 },
+                                ]}
+                              >
+                                <Picker.Item label={t("select")} value="" />
+                                <Picker.Item label={t("lease")} value="lease" />
+                                <Picker.Item label={t("rent")} value="rent" />
+                              </Picker>
+                            </View>
+                            {errors.usage ? (
+                              <Text style={styles.errorText}>{errors.usage}</Text>
+                            ) : null}
+
+                            <Text style={styles.label}>{t("facilities")}</Text>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginBottom: 10,
+                              }}
+                            >
+                              <View
+                                style={[
+                                  styles.inputContainer,
+                                  { flex: 1, marginBottom: 0 },
+                                ]}
+                              >
+                                <TextInput
+                                  style={[styles.input, { flex: 1 }]}
+                                  placeholder={t("add_new_facility")}
+                                  placeholderTextColor="gray"
+                                  value={newFacilityText}
+                                  onChangeText={setNewFacilityText}
+                                />
+                              </View>
+                              <TouchableOpacity
+                                style={styles.addButton}
+                                onPress={() => {
+                                  if (newFacilityText.trim()) {
+                                    setCustomFacilities([
+                                      ...customFacilities,
+                                      newFacilityText.trim(),
+                                    ]);
+                                    setNewFacilityText("");
+                                  }
+                                }}
+                              >
+                                <Text style={styles.addButtonText}>+</Text>
+                              </TouchableOpacity>
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                flexWrap: "wrap",
+                                marginBottom: 10,
+                              }}
+                            >
+                              {customFacilities.map((facility, index) => (
+                                <View key={index} style={styles.facilityTag}>
+                                  <Text style={styles.facilityText}>
+                                    {facility}
+                                  </Text>
+                                  <TouchableOpacity
+                                    style={styles.removeButton}
+                                    onPress={() => {
+                                      setCustomFacilities(
+                                        customFacilities.filter(
+                                          (_, i) => i !== index,
+                                        ),
+                                      );
+                                    }}
+                                  >
+                                    <Text style={styles.removeButtonText}>-</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              ))}
+                            </View>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                flexWrap: "wrap",
+                                marginBottom: 10,
+                              }}
+                            >
+                              {[
+                                t("Water") || "Water",
+                                t("Parking") || "Parking",
+                                t("Lift") || "Lift",
+                                t("AC") || "AC",
+                                t("Non AC") || "Non AC",
+                                t("Power Backup") || "Power Backup",
+                                t("Security") || "Security",
+                                t("CCTV") || "CCTV",
+                                t("Cafeteria") || "Cafeteria",
+                              ].map((label) => {
+                                const isSelected =
+                                  selectedFacilities.includes(label);
+                                return (
+                                  <TouchableOpacity
+                                    key={label}
+                                    style={[
+                                      styles.facilityTag,
+                                      isSelected && styles.presetSelected,
+                                    ]}
+                                    onPress={() => {
+                                      const exists =
+                                        selectedFacilities.includes(label);
+                                      setSelectedFacilities(
+                                        exists
+                                          ? selectedFacilities.filter(
+                                            (f) => f !== label,
+                                          )
+                                          : [...selectedFacilities, label],
+                                      );
+                                    }}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.facilityText,
+                                        isSelected && { color: "#ffffff" },
+                                      ]}
+                                    >
+                                      {label}
+                                    </Text>
+                                  </TouchableOpacity>
+                                );
+                              })}
+                            </View>
+                            {errors.facilities ? (
+                              <Text style={styles.errorText}>
+                                {errors.facilities}
+                              </Text>
+                            ) : null}
+                            {/* Rent Amount */}
+                            <Text style={styles.label}>Basic Rent / Basic Property Amount</Text>
+                            <View style={[styles.inputContainer, styles.inputContainerStep2]}>
+                              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 18, marginRight: 8 }}>₹</Text>
+                              <TextInput
+                                style={[styles.input, errors.rent && styles.inputError, { flex: 1 }]}
+                                placeholder="Enter amount"
+                                placeholderTextColor="gray"
+                                keyboardType="numeric"
+                                value={form.rent}
+                                onChangeText={(v) => {
+                                  const cleaned = v.replace(/[^0-9]/g, "");
+                                  setForm({ ...form, rent: cleaned });
+                                  if (cleaned && Number(cleaned) > 0) {
+                                    setErrors({ ...errors, rent: "" });
+                                  }
+                                }}
+                              />
+                            </View>
+                            {errors.rent ? <Text style={styles.errorText}>{errors.rent}</Text> : null}
+                          </>
+                        )}
+
+                        {/* ===== COVER IMAGE UPLOAD ===== */}
+                        {form.stayType !== "" && (
+                          <View style={{ marginTop: 8, marginBottom: 4 }}>
+                            {/* Section Header */}
+                            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                                <Ionicons name="image" size={18} color="#7C3AED" />
+                              </View>
+                              <View>
+                                <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Cover Image</Text>
+                                <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 1 }}>Used as the main thumbnail</Text>
+                              </View>
+                            </View>
+
+                            {form.documents.coverImage ? (
+                              <View style={{
+                                borderRadius: 20, overflow: "hidden",
+                                borderWidth: 1.5, borderColor: "#DDD6FE",
+                                shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: 0.1, shadowRadius: 10, elevation: 4,
+                                marginBottom: 8,
+                              }}>
+                                <Image
+                                  source={{ uri: form.documents.coverImage.uri }}
+                                  style={{ width: "100%", height: 180 }}
+                                  resizeMode="cover"
+                                />
+                                {/* Overlay bar */}
+                                <View style={{
+                                  position: "absolute", bottom: 0, left: 0, right: 0,
+                                  backgroundColor: "rgba(0,0,0,0.45)",
+                                  flexDirection: "row", alignItems: "center",
+                                  paddingVertical: 10, paddingHorizontal: 14,
+                                }}>
+                                  <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+                                    <Ionicons name="checkmark-circle" size={16} color="#34D399" />
+                                    <Text style={{ fontSize: 13, color: "#FFFFFF", marginLeft: 6, fontWeight: "600" }}>Cover image uploaded</Text>
+                                  </View>
+                                  <TouchableOpacity
+                                    onPress={() => openImagePicker("coverImage")}
+                                    style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 8, paddingVertical: 5, paddingHorizontal: 10 }}
+                                  >
+                                    <Ionicons name="pencil" size={14} color="#FFF" />
+                                    <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "600", marginLeft: 4 }}>Change</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+                            ) : (
                               <TouchableOpacity
                                 style={{
-                                  width: "30.8%", aspectRatio: 1,
-                                  borderRadius: 14, borderWidth: 2, borderStyle: "dashed",
-                                  borderColor: "#DDD6FE", backgroundColor: "#FAFAFF",
-                                  justifyContent: "center", alignItems: "center",
+                                  borderRadius: 20,
+                                  borderWidth: 2,
+                                  borderStyle: "dashed",
+                                  borderColor: errors.document_coverImage ? "#EF4444" : "#C4B5FD",
+                                  backgroundColor: "#FAFAFF",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  paddingVertical: 32,
+                                  marginBottom: 8,
+                                  shadowColor: "#7C3AED",
+                                  shadowOffset: { width: 0, height: 2 },
+                                  shadowOpacity: 0.06,
+                                  shadowRadius: 8,
+                                  elevation: 1,
                                 }}
-                                onPress={() => openImagePicker("homePics")}
+                                onPress={() => openImagePicker("coverImage")}
+                                activeOpacity={0.8}
                               >
-                                <Ionicons name="add" size={24} color="#7C3AED" />
-                                <Text style={{ fontSize: 10, color: "#7C3AED", fontWeight: "600", marginTop: 3 }}>Add More</Text>
+                                <View style={{
+                                  width: 68, height: 68, borderRadius: 34,
+                                  backgroundColor: "#F5F3FF",
+                                  justifyContent: "center", alignItems: "center",
+                                  marginBottom: 14,
+                                  shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 },
+                                  shadowOpacity: 0.14, shadowRadius: 8, elevation: 4,
+                                }}>
+                                  <Ionicons name="cloud-upload-outline" size={32} color="#7C3AED" />
+                                </View>
+                                <Text style={{ fontSize: 15, fontWeight: "700", color: "#1E1B4B", marginBottom: 4 }}>Upload Cover Image</Text>
+                                <Text style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 2 }}>Recommended: 16:9 ratio</Text>
+                                <Text style={{ fontSize: 11, color: "#C4B5FD", fontWeight: "500" }}>JPG, PNG • Max 5 MB</Text>
                               </TouchableOpacity>
+                            )}
+                            {errors.document_coverImage ? (
+                              <Text style={styles.errorText}>{errors.document_coverImage}</Text>
+                            ) : null}
+                          </View>
+                        )}
+                        {/* ===== PROPERTY GALLERY ===== */}
+                        {form.stayType !== "" && (
+                          <View style={{ marginTop: 8, marginBottom: 8 }}>
+                            {/* Section Header */}
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: "#F5F3FF", justifyContent: "center", alignItems: "center", marginRight: 10 }}>
+                                  <Ionicons name="images" size={18} color="#7C3AED" />
+                                </View>
+                                <View>
+                                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#111827" }}>Property Gallery</Text>
+                                  <Text style={{ color: "#9CA3AF", fontSize: 12, marginTop: 1 }}>Upload room & property photos</Text>
+                                </View>
+                              </View>
+                              {/* Photo count badge */}
+                              {Array.isArray(form.documents.homePics) && form.documents.homePics.length > 0 && (
+                                <View style={{ backgroundColor: "#7C3AED", borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 }}>
+                                  <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>{form.documents.homePics.length}/10</Text>
+                                </View>
+                              )}
+                            </View>
+
+                            {/* Upload Card */}
+                            <TouchableOpacity
+                              style={{
+                                borderRadius: 20,
+                                borderWidth: 2,
+                                borderStyle: "dashed",
+                                borderColor: errors.document_homePics ? "#EF4444" : "#DDD6FE",
+                                backgroundColor: "#FAFAFF",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                paddingVertical: 26,
+                                marginBottom: 12,
+                                shadowColor: "#7C3AED",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.06,
+                                shadowRadius: 8,
+                                elevation: 1,
+                              }}
+                              onPress={() => openImagePicker("homePics")}
+                              activeOpacity={0.8}
+                            >
+                              <View style={{
+                                width: 64, height: 64, borderRadius: 32,
+                                backgroundColor: "#F5F3FF",
+                                justifyContent: "center", alignItems: "center",
+                                marginBottom: 12,
+                                shadowColor: "#7C3AED", shadowOffset: { width: 0, height: 3 },
+                                shadowOpacity: 0.14, shadowRadius: 8, elevation: 3,
+                              }}>
+                                <Ionicons name="images-outline" size={30} color="#7C3AED" />
+                              </View>
+                              <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E1B4B", marginBottom: 4 }}>Upload Property Gallery</Text>
+                              <Text style={{ fontSize: 12, color: "#9CA3AF" }}>Maximum 10 Photos • JPG, PNG</Text>
+                            </TouchableOpacity>
+
+                            {errors.document_homePics ? (
+                              <Text style={styles.errorText}>{errors.document_homePics}</Text>
+                            ) : null}
+
+                            {/* Uploaded Images Grid */}
+                            {Array.isArray(form.documents.homePics) && form.documents.homePics.length > 0 && (
+                              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                                {form.documents.homePics.map((img, idx) => (
+                                  <View key={idx} style={{ width: "30.8%" }}>
+                                    <View style={{ borderRadius: 14, overflow: "hidden", position: "relative" }}>
+                                      <Image
+                                        source={{ uri: img.uri }}
+                                        style={{ width: "100%", aspectRatio: 1 }}
+                                        resizeMode="cover"
+                                      />
+                                      {/* Dark overlay on image bottom */}
+                                      <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 30, backgroundColor: "rgba(0,0,0,0.3)" }} />
+                                      {/* Remove Button */}
+                                      <TouchableOpacity
+                                        style={{
+                                          position: "absolute", top: 5, right: 5,
+                                          backgroundColor: "rgba(239,68,68,0.9)",
+                                          borderRadius: 10, width: 22, height: 22,
+                                          alignItems: "center", justifyContent: "center",
+                                        }}
+                                        onPress={() => {
+                                          const current = form.documents.homePics || [];
+                                          const updated = current.filter((_, i) => i !== idx);
+                                          const newErrors = { ...errors };
+                                          if (updated.length === 0) newErrors.document_homePics = t("property_images_required");
+                                          else delete newErrors.document_homePics;
+                                          setForm({ ...form, documents: { ...form.documents, homePics: updated } });
+                                          setErrors(newErrors);
+                                        }}
+                                      >
+                                        <Ionicons name="close" size={13} color="#FFF" />
+                                      </TouchableOpacity>
+                                      {/* Index label */}
+                                      <View style={{ position: "absolute", bottom: 4, left: 6 }}>
+                                        <Text style={{ color: "#FFF", fontSize: 10, fontWeight: "700" }}>#{idx + 1}</Text>
+                                      </View>
+                                    </View>
+                                  </View>
+                                ))}
+                                {/* Add more button */}
+                                {form.documents.homePics.length < 10 && (
+                                  <TouchableOpacity
+                                    style={{
+                                      width: "30.8%", aspectRatio: 1,
+                                      borderRadius: 14, borderWidth: 2, borderStyle: "dashed",
+                                      borderColor: "#DDD6FE", backgroundColor: "#FAFAFF",
+                                      justifyContent: "center", alignItems: "center",
+                                    }}
+                                    onPress={() => openImagePicker("homePics")}
+                                  >
+                                    <Ionicons name="add" size={24} color="#7C3AED" />
+                                    <Text style={{ fontSize: 10, color: "#7C3AED", fontWeight: "600", marginTop: 3 }}>Add More</Text>
+                                  </TouchableOpacity>
+                                )}
+                              </View>
                             )}
                           </View>
                         )}
+
+
+                        {/* Secure & Safe Banner */}
+                        <View style={{ marginTop: 20, backgroundColor: "#F5F3FF", borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#E9D5FF" }}>
+                          <View style={{ width: 44, height: 44, backgroundColor: LIGHT_PURPLE, borderRadius: 22, justifyContent: "center", alignItems: "center", marginRight: 15 }}>
+                            <FontAwesome name="shield" size={20} color="#FFFFFF" />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 16, fontWeight: "bold", color: "#111827", marginBottom: 4 }}>Secure Registration</Text>
+                            <Text style={{ fontSize: 13, color: "#6B7280", lineHeight: 18 }}>Your information is protected with bank-level encryption.</Text>
+                          </View>
+                        </View>
+
                       </View>
-                    )}
+                    </>
+                  )}
 
 
-                    {/* Secure & Safe Banner */}
-                    <View style={{ marginTop: 20, backgroundColor: "#F5F3FF", borderRadius: 16, padding: 18, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#E9D5FF" }}>
-                      <View style={{ width: 44, height: 44, backgroundColor: LIGHT_PURPLE, borderRadius: 22, justifyContent: "center", alignItems: "center", marginRight: 15 }}>
-                        <FontAwesome name="shield" size={20} color="#FFFFFF" />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 16, fontWeight: "bold", color: "#111827", marginBottom: 4 }}>Secure Registration</Text>
-                        <Text style={{ fontSize: 13, color: "#6B7280", lineHeight: 18 }}>Your information is protected with bank-level encryption.</Text>
-                      </View>
-                    </View>
-
-                  </View>
-                  </>
-                )}
-
-
-                {/* ---------- STEP 3 ---------- */}
-                {step === 2 && (
-                  <Step3 form={form} onUpdateFloors={handleUpdateFloors} />
-                )}
-                {/* ===== PREMIUM STICKY BOTTOM ACTION BAR ===== */}
-                <View style={{
-                  paddingHorizontal: 16,
-                  paddingTop: 14,
-                  paddingBottom: Platform.OS === "ios" ? 28 : 18,
-                  backgroundColor: "#FFFFFF",
-                  borderTopWidth: 1,
-                  borderTopColor: "#F0EEFF",
-                  shadowColor: "#7C3AED",
-                  shadowOffset: { width: 0, height: -4 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 12,
-                  elevation: 16,
-                }}>
-                  <View style={{ flexDirection: "row", gap: 10 }}>
-                    {/* Back Button */}
-                    <TouchableOpacity
-                      style={{
-                        flex: 1,
-                        height: 58,
-                        borderRadius: 18,
-                        borderWidth: 2,
-                        borderColor: "#8B5CF6",
-                        backgroundColor: "#FAFAFF",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        flexDirection: "row",
-                        gap: 6,
-                      }}
-                      onPress={() => {
-                        if (step > 1) {
-                          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                          setStep(step - 1);
-                        } else {
-                          navigation.goBack();
-                        }
-                      }}
-                      activeOpacity={0.75}
-                    >
-                      <Ionicons name="arrow-back" size={18} color="#7C3AED" />
-                      <Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: 15 }}>{t("back") || "Back"}</Text>
-                    </TouchableOpacity>
-
-                    {/* Next / Submit Button */}
-                    <TouchableOpacity
-                      style={{ flex: 1, borderRadius: 18, overflow: "hidden",
-                        shadowColor: "#6D28D9", shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
-                      }}
-                      onPress={() => {
-                        if (step < 2) {
-                          next();
-                        } else {
-                          const floors = form.floorsData || [];
-                          if (floors.length < 1) {
-                            Alert.alert(t("error"), t("add_at_least_1_floor"));
-                            return;
+                  {/* ---------- STEP 3 ---------- */}
+                  {step === 2 && (
+                    <Step3 form={form} onUpdateFloors={handleUpdateFloors} />
+                  )}
+                  {/* ===== PREMIUM STICKY BOTTOM ACTION BAR ===== */}
+                  <View style={{
+                    paddingHorizontal: 16,
+                    paddingTop: 14,
+                    paddingBottom: Platform.OS === "ios" ? 28 : 18,
+                    backgroundColor: "#FFFFFF",
+                    borderTopWidth: 1,
+                    borderTopColor: "#F0EEFF",
+                    shadowColor: "#7C3AED",
+                    shadowOffset: { width: 0, height: -4 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    elevation: 16,
+                  }}>
+                    <View style={{ flexDirection: "row", gap: 10 }}>
+                      {/* Back Button */}
+                      <TouchableOpacity
+                        style={{
+                          flex: 1,
+                          height: 58,
+                          borderRadius: 18,
+                          borderWidth: 2,
+                          borderColor: "#8B5CF6",
+                          backgroundColor: "#FAFAFF",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          flexDirection: "row",
+                          gap: 6,
+                        }}
+                        onPress={() => {
+                          if (step > 1) {
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                            setStep(step - 1);
+                          } else {
+                            navigation.goBack();
                           }
-                          if (form.stayType === "hostel") {
-                            const totalRooms = floors.reduce((sum, floor) => sum + (floor.rooms ? floor.rooms.length : 0), 0);
-                            if (totalRooms < 1) { Alert.alert(t("error"), t("add_at_least_1_room")); return; }
-                          }
-                          if (form.stayType === "apartment") {
-                            const totalFlats = floors.reduce((sum, floor) => sum + (floor.flats ? floor.flats.length : 0), 0);
-                            if (totalFlats < 1) { Alert.alert(t("error"), t("add_at_least_1_flat")); return; }
-                          }
-                          if (form.stayType === "commercial") {
-                            const totalSections = floors.reduce((sum, floor) => sum + (floor.sections ? floor.sections.length : 0), 0);
-                            if (totalSections < 1) { Alert.alert(t("error"), t("add_at_least_1_section")); return; }
-                            for (const floor of floors) {
-                              for (const section of floor.sections || []) {
-                                if (!section.area) {
-                                  Alert.alert(t("error"), `${t("enter_area_sqft").replace("{floor}", floor.floorNo).replace("{section}", section.sectionNo)}`);
-                                  return;
+                        }}
+                        activeOpacity={0.75}
+                      >
+                        <Ionicons name="arrow-back" size={18} color="#7C3AED" />
+                        <Text style={{ color: "#7C3AED", fontWeight: "700", fontSize: 15 }}>{t("back") || "Back"}</Text>
+                      </TouchableOpacity>
+
+                      {/* Next / Submit Button */}
+                      <TouchableOpacity
+                        style={{
+                          flex: 1, borderRadius: 18, overflow: "hidden",
+                          shadowColor: "#6D28D9", shadowOffset: { width: 0, height: 6 },
+                          shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
+                        }}
+                        onPress={() => {
+                          if (step < 2) {
+                            next();
+                          } else {
+                            const floors = form.floorsData || [];
+                            if (floors.length < 1) {
+                              Alert.alert(t("error"), t("add_at_least_1_floor"));
+                              return;
+                            }
+                            if (form.stayType === "hostel") {
+                              const totalRooms = floors.reduce((sum, floor) => sum + (floor.rooms ? floor.rooms.length : 0), 0);
+                              if (totalRooms < 1) { Alert.alert(t("error"), t("add_at_least_1_room")); return; }
+                            }
+                            if (form.stayType === "apartment") {
+                              const totalFlats = floors.reduce((sum, floor) => sum + (floor.flats ? floor.flats.length : 0), 0);
+                              if (totalFlats < 1) { Alert.alert(t("error"), t("add_at_least_1_flat")); return; }
+                            }
+                            if (form.stayType === "commercial") {
+                              const totalSections = floors.reduce((sum, floor) => sum + (floor.sections ? floor.sections.length : 0), 0);
+                              if (totalSections < 1) { Alert.alert(t("error"), t("add_at_least_1_section")); return; }
+                              for (const floor of floors) {
+                                for (const section of floor.sections || []) {
+                                  if (!section.area) {
+                                    Alert.alert(t("error"), `${t("enter_area_sqft").replace("{floor}", floor.floorNo).replace("{section}", section.sectionNo)}`);
+                                    return;
+                                  }
                                 }
                               }
                             }
+                            if (!form.name.trim()) { Alert.alert(t("error"), "Please enter Owner Full Name"); return; }
+                            submit();
                           }
-                          if (!form.name.trim()) { Alert.alert(t("error"), "Please enter Owner Full Name"); return; }
-                          submit();
-                        }
-                      }}
-                      activeOpacity={0.88}
-                    >
-                      <LinearGradient
-                        colors={["#8B5CF6", "#6D28D9"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={{
-                          height: 58,
-                          flexDirection: "row",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
                         }}
+                        activeOpacity={0.88}
                       >
-                        <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: 16, letterSpacing: 0.4 }}>
-                          {step < 2 ? (t("next") || "Next") : (t("submit") || "Submit")}
-                        </Text>
-                        {step < 2
-                          ? <Ionicons name="arrow-forward-circle" size={20} color="rgba(255,255,255,0.9)" />
-                          : <Ionicons name="checkmark-circle" size={20} color="rgba(255,255,255,0.9)" />
-                        }
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Security Footer */}
-                  {step < 2 && (
-                    <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 12 }}>
-                      <Ionicons name="shield-checkmark" size={12} color="#A78BFA" />
-                      <Text style={{ fontSize: 11, color: "#A78BFA", marginLeft: 5, fontWeight: "500" }}>256-bit encrypted · Your data is safe</Text>
+                        <LinearGradient
+                          colors={["#8B5CF6", "#6D28D9"]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={{
+                            height: 58,
+                            flexDirection: "row",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: 8,
+                          }}
+                        >
+                          <Text style={{ color: "#FFFFFF", fontWeight: "800", fontSize: 16, letterSpacing: 0.4 }}>
+                            {step < 2 ? (t("next") || "Next") : (t("submit") || "Submit")}
+                          </Text>
+                          {step < 2
+                            ? <Ionicons name="arrow-forward-circle" size={20} color="rgba(255,255,255,0.9)" />
+                            : <Ionicons name="checkmark-circle" size={20} color="rgba(255,255,255,0.9)" />
+                          }
+                        </LinearGradient>
+                      </TouchableOpacity>
                     </View>
-                  )}
+
+                    {/* Security Footer */}
+                    {step < 2 && (
+                      <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", marginTop: 12 }}>
+                        <Ionicons name="shield-checkmark" size={12} color="#A78BFA" />
+                        <Text style={{ fontSize: 11, color: "#A78BFA", marginLeft: 5, fontWeight: "500" }}>256-bit encrypted · Your data is safe</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-                </View>
-                </TouchableWithoutFeedback>
-              </Animated.ScrollView>
+              </TouchableWithoutFeedback>
+            </Animated.ScrollView>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -3207,6 +3218,10 @@ function Step3({ form, onUpdateFloors }) {
   const [roomSelectionMode, setRoomSelectionMode] = useState(false);
   const [selectedRooms, setSelectedRooms] = useState([]);
   const [roomBatchModalOpen, setRoomBatchModalOpen] = useState(false);
+
+  const [sharingModalVisible, setSharingModalVisible] = useState(false);
+  const [sharingModalInput, setSharingModalInput] = useState('');
+  const [sharingModalRoomIndex, setSharingModalRoomIndex] = useState(null);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const roomSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -3281,6 +3296,7 @@ function Step3({ form, onUpdateFloors }) {
       }
       return prevFloors.slice(0, capped);
     });
+    setBuildingOpen(true);
   };
 
   const addFloorManually = () => {
@@ -3388,8 +3404,22 @@ function Step3({ form, onUpdateFloors }) {
         setSelectedRooms([...selectedRooms, index]);
       }
     } else {
-      setSelectedRoom(selectedRoom === index ? null : index);
+      const room = floors[selectedFloor].rooms[index];
+      setSharingModalRoomIndex(index);
+      setSharingModalInput(String(room.beds || ''));
+      setSharingModalVisible(true);
     }
+  };
+
+  const handleSaveSharing = () => {
+    const num = parseInt(sharingModalInput);
+    if (isNaN(num) || num <= 0) return;
+    const updated = [...floors];
+    updated[selectedFloor].rooms[sharingModalRoomIndex].beds = num;
+    setFloors(updated);
+    setSharingModalVisible(false);
+    setSharingModalInput('');
+    setSharingModalRoomIndex(null);
   };
 
   const deleteSelectedRooms = () => {
@@ -3489,7 +3519,7 @@ function Step3({ form, onUpdateFloors }) {
           <TouchableOpacity style={[step3Styles.setBtn, { height: 44, marginLeft: 10, flexDirection: "row", alignItems: "center" }]} onPress={generateFloors}>
             <Ionicons name="create-outline" size={16} color={WHITE} style={{ marginRight: 6 }} />
             <Text style={step3Styles.btnText}>
-              {floors.length ? t("update") : t("add")}
+              {t("add")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -3497,38 +3527,38 @@ function Step3({ form, onUpdateFloors }) {
 
       {floors.length > 0 && (
         <View style={[styles.sectionCard, { backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#EDE9FE", paddingVertical: 25 }]}>
-            <View style={{ alignItems: "center" }}>
-              <View style={[step3Styles.iconCircle, { backgroundColor: "#EDE9FE" }]}>
-                <Ionicons name="business" size={40} color={LIGHT_PURPLE} />
-              </View>
-
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "800", fontSize: 20 }}>
-                {floors.length} {t("floors")}
-              </Text>
-              <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4, marginBottom: 15 }}>
-                {totalRoomsCount} {t("rooms")} {t("total") || "Total"}
-              </Text>
-
-              <View style={{ height: 1, width: "80%", backgroundColor: "#E5E7EB", marginVertical: 10 }} />
-
-              <Text style={{ color: "#111827", fontWeight: "bold", fontSize: 16, marginTop: 10 }}>
-                Configure Your Building Layout
-              </Text>
-              <Text style={{ color: "#6B7280", fontSize: 13, textAlign: "center", marginTop: 4, marginBottom: 20, paddingHorizontal: 20 }}>
-                Add rooms, set dimensions, and organize your building structure.
-              </Text>
-
-              <TouchableOpacity
-                style={[styles.btn, { width: "100%", flexDirection: "row", justifyContent: "center" }]}
-                onPress={() => setBuildingOpen(true)}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.btnText}>{t("open_layout_editor")}</Text>
-                <Ionicons name="arrow-forward" size={18} color={WHITE} style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
+          <View style={{ alignItems: "center" }}>
+            <View style={[step3Styles.iconCircle, { backgroundColor: "#EDE9FE" }]}>
+              <Ionicons name="business" size={40} color={LIGHT_PURPLE} />
             </View>
+
+            <Text style={{ color: LIGHT_PURPLE, fontWeight: "800", fontSize: 20 }}>
+              {floors.length} {t("floors")}
+            </Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4, marginBottom: 15 }}>
+              {totalRoomsCount} {t("rooms")} {t("total") || "Total"}
+            </Text>
+
+            <View style={{ height: 1, width: "80%", backgroundColor: "#E5E7EB", marginVertical: 10 }} />
+
+            <Text style={{ color: "#111827", fontWeight: "bold", fontSize: 16, marginTop: 10 }}>
+              Configure Your Building Layout
+            </Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, textAlign: "center", marginTop: 4, marginBottom: 20, paddingHorizontal: 20 }}>
+              Add rooms, set dimensions, and organize your building structure.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.btn, { width: "100%", flexDirection: "row", justifyContent: "center" }]}
+              onPress={() => setBuildingOpen(true)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.btnText}>{t("open_layout_editor")}</Text>
+              <Ionicons name="arrow-forward" size={18} color={WHITE} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
+      )}
 
 
       {/* Bottom Summary Bar */}
@@ -3536,23 +3566,11 @@ function Step3({ form, onUpdateFloors }) {
         <View style={[styles.sectionCard, { flexDirection: "row", justifyContent: "space-between", paddingVertical: 15 }]}>
           <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
             <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="layers-outline" size={20} color={LIGHT_PURPLE} />
+              <Ionicons name="layers-outline" size={20} color={LIGHT_PURPLE} />
             </View>
             <View>
               <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{floors.length}</Text>
               <Text style={{ color: "#6B7280", fontSize: 11 }}>Floors</Text>
-            </View>
-          </View>
-          
-          <View style={{ width: 1, backgroundColor: "#E5E7EB", marginHorizontal: 10 }} />
-
-          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, justifyContent: "center" }}>
-            <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="bed-outline" size={20} color={LIGHT_PURPLE} />
-            </View>
-            <View>
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{totalRoomsCount}</Text>
-              <Text style={{ color: "#6B7280", fontSize: 11 }}>Rooms</Text>
             </View>
           </View>
 
@@ -3560,11 +3578,11 @@ function Step3({ form, onUpdateFloors }) {
 
           <View style={{ flexDirection: "row", alignItems: "center", flex: 1, justifyContent: "flex-end" }}>
             <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="resize-outline" size={20} color={LIGHT_PURPLE} />
+              <Ionicons name="bed-outline" size={20} color={LIGHT_PURPLE} />
             </View>
             <View>
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>—</Text>
-              <Text style={{ color: "#6B7280", fontSize: 11 }}>Area</Text>
+              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{totalRoomsCount}</Text>
+              <Text style={{ color: "#6B7280", fontSize: 11 }}>Rooms</Text>
             </View>
           </View>
         </View>
@@ -3673,10 +3691,11 @@ function Step3({ form, onUpdateFloors }) {
               <View style={{ flexDirection: "row", gap: 10 }}>
 
                 <TouchableOpacity
-                  style={[step3Styles.primaryBtn, { flex: 1 }]}
+                  style={[step3Styles.primaryBtn, { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center" }]}
                   onPress={addFloorManually}
                 >
-                  <Text style={step3Styles.btnText}>+ {t("add_floor")}</Text>
+                  <Ionicons name="add-outline" size={18} color={WHITE} style={{ marginRight: 6 }} />
+                  <Text style={step3Styles.btnText}>{t("add_floor")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -3737,20 +3756,13 @@ function Step3({ form, onUpdateFloors }) {
                     keyboardType="number-pad"
                     value={roomInput}
                     onChangeText={setRoomInput}
-                    style={step3Styles.input}
+                    style={[step3Styles.input, { flex: 1 }]}
                   />
                   <TouchableOpacity
-                    style={step3Styles.setBtn}
+                    style={[step3Styles.setBtn, { flexDirection: "row", alignItems: "center", paddingHorizontal: 20 }]}
                     onPress={generateRoomsForFloor}
                   >
-                    <Text style={step3Styles.btnText}>{t("set")}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={step3Styles.setBtn}
-                    onPress={addRoomManually}
-                  >
-                    <Ionicons name="add" size={18} color={WHITE} />
-                    <Text style={step3Styles.btnText}> {t("add")}</Text>
+                    <Text style={step3Styles.btnText}>Add</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -3844,45 +3856,118 @@ function Step3({ form, onUpdateFloors }) {
                       <Text style={step3Styles.btnText}>{t("apply_sharing")}</Text>
                     </TouchableOpacity>
                   </View>
-                ) : selectedRoom !== null ? (
-                  <View style={step3Styles.sharingBox}>
-                    <Text style={step3Styles.sharingTitle}>
-                      {t("beds_in_room")} {" "}
-                      {floors[selectedFloor].floorNo * 100 +
-                        floors[selectedFloor].rooms[selectedRoom].roomNo}
-                    </Text>
-                    <View style={step3Styles.sharingRow}>
-                      <TouchableOpacity onPress={() => updateBeds(-1)}>
-                        <Ionicons
-                          name="remove-circle"
-                          size={48}
-                          color="#EF4444"
-                        />
-                      </TouchableOpacity>
-                      <Text style={step3Styles.bedCount}>
-                        {floors[selectedFloor].rooms[selectedRoom].beds}
-                      </Text>
-                      <TouchableOpacity onPress={() => updateBeds(1)}>
-                        <Ionicons
-                          name="add-circle"
-                          size={48}
-                          color={LIGHT_PURPLE}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
                 ) : (
                   <View style={{ flexDirection: "row", gap: 10 }}>
-
                     <TouchableOpacity
                       style={[step3Styles.closeBtn, { width: "100%" }]}
                       onPress={() => setRoomsOpen(false)}
                     >
                       <Text style={step3Styles.btnText}>{t("done")}</Text>
                     </TouchableOpacity>
-
                   </View>
                 )}
+
+                {/* Sharing Modal */}
+                <Modal
+                  visible={sharingModalVisible}
+                  transparent={true}
+                  animationType="fade"
+                  onRequestClose={() => setSharingModalVisible(false)}
+                >
+                  <View style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.45)',
+                  }}>
+                    <View style={{
+                      width: '82%',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 20,
+                      paddingVertical: 28,
+                      paddingHorizontal: 24,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 8 },
+                      shadowOpacity: 0.18,
+                      shadowRadius: 24,
+                      elevation: 12,
+                    }}>
+                      <Text style={{
+                        fontSize: 18,
+                        fontWeight: '700',
+                        color: '#1F2937',
+                        textAlign: 'center',
+                        marginBottom: 20,
+                      }}>
+                        {sharingModalRoomIndex !== null
+                          ? `${t("room") || "Room"} ${floors[selectedFloor]?.floorNo * 100 + floors[selectedFloor]?.rooms[sharingModalRoomIndex]?.roomNo} ${t("sharing")}`
+                          : ''}
+                      </Text>
+                      <Text style={{
+                        fontSize: 13,
+                        fontWeight: '500',
+                        color: '#6B7280',
+                        marginBottom: 8,
+                      }}>
+                        Enter Number of Sharing
+                      </Text>
+                      <TextInput
+                        placeholder="e.g. 2"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="number-pad"
+                        value={sharingModalInput}
+                        onChangeText={setSharingModalInput}
+                        autoFocus
+                        style={{
+                          borderWidth: 1,
+                          borderColor: '#E5E7EB',
+                          borderRadius: 14,
+                          paddingVertical: 14,
+                          paddingHorizontal: 16,
+                          backgroundColor: '#F9FAFB',
+                          fontSize: 16,
+                          color: '#111827',
+                          marginBottom: 24,
+                        }}
+                      />
+                      <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setSharingModalVisible(false);
+                            setSharingModalInput('');
+                            setSharingModalRoomIndex(null);
+                          }}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 14,
+                            borderRadius: 14,
+                            backgroundColor: '#F3F4F6',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: 15 }}>{t("cancel")}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleSaveSharing}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 14,
+                            borderRadius: 14,
+                            backgroundColor: '#7C3AED',
+                            alignItems: 'center',
+                            shadowColor: '#7C3AED',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 4,
+                          }}
+                        >
+                          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t("save") || "Save"}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
 
                 {roomBatchModalOpen && (
                   <View style={step3Styles.batchPopup}>
@@ -3920,7 +4005,7 @@ function Step3({ form, onUpdateFloors }) {
             {batchModalOpen && (
               <View style={step3Styles.batchPopup}>
                 <Text style={step3Styles.popupTitle}>
-                  {t("set")} {t("rooms")} {t("for")} {selectedFloors.length} {t("floors")}
+                  {t("add")} {t("rooms")} {t("for")} {selectedFloors.length} {t("floors")}
                 </Text>
                 <TextInput
                   placeholder={t("rooms_per_floor")}
@@ -3972,6 +4057,10 @@ function ApartmentLayout({ onUpdateFloors }) {
   const [flatSelectionMode, setFlatSelectionMode] = useState(false);
   const [selectedFlats, setSelectedFlats] = useState([]);
   const [bhkBatchModalOpen, setBhkBatchModalOpen] = useState(false);
+
+  const [flatSharingModalVisible, setFlatSharingModalVisible] = useState(false);
+  const [flatSharingModalInput, setFlatSharingModalInput] = useState('');
+  const [flatSharingModalIndex, setFlatSharingModalIndex] = useState(null);
 
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const flatSlideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -4144,8 +4233,22 @@ function ApartmentLayout({ onUpdateFloors }) {
         setSelectedFlats([...selectedFlats, index]);
       }
     } else {
-      setSelectedFlat(selectedFlat === index ? null : index);
+      const flat = floors[selectedFloor].flats[index];
+      setFlatSharingModalIndex(index);
+      setFlatSharingModalInput(String(flat.bhk || ''));
+      setFlatSharingModalVisible(true);
     }
+  };
+
+  const handleSaveFlatSharing = () => {
+    const num = parseInt(flatSharingModalInput);
+    if (isNaN(num) || num <= 0) return;
+    const updated = [...floors];
+    updated[selectedFloor].flats[flatSharingModalIndex].bhk = num;
+    setFloors(updated);
+    setFlatSharingModalVisible(false);
+    setFlatSharingModalInput('');
+    setFlatSharingModalIndex(null);
   };
 
   const deleteSelectedFlats = () => {
@@ -4247,45 +4350,45 @@ function ApartmentLayout({ onUpdateFloors }) {
           >
             <Ionicons name="create-outline" size={16} color={WHITE} style={{ marginRight: 6 }} />
             <Text style={step3Styles.btnText}>
-              {floors.length > 0 ? t("update") : t("set")}
+              {t("add")}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {floors.length > 0 && (
-          <View style={[styles.sectionCard, { backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#EDE9FE", paddingVertical: 25 }]}>
-            <View style={{ alignItems: "center" }}>
-              <View style={[step3Styles.iconCircle, { backgroundColor: "#EDE9FE" }]}>
-                <Ionicons name="business" size={40} color={LIGHT_PURPLE} />
-              </View>
-
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "800", fontSize: 20 }}>
-                {floors.length} {t("floors")}
-              </Text>
-              <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4, marginBottom: 15 }}>
-                {totalFlatsCount} {t("flats")} {t("total") || "Total"}
-              </Text>
-
-              <View style={{ height: 1, width: "80%", backgroundColor: "#E5E7EB", marginVertical: 10 }} />
-
-              <Text style={{ color: "#111827", fontWeight: "bold", fontSize: 16, marginTop: 10 }}>
-                Configure Your Building Layout
-              </Text>
-              <Text style={{ color: "#6B7280", fontSize: 13, textAlign: "center", marginTop: 4, marginBottom: 20, paddingHorizontal: 20 }}>
-                Add flats, set dimensions, and organize your building structure.
-              </Text>
-
-              <TouchableOpacity
-                style={[styles.btn, { width: "100%", flexDirection: "row", justifyContent: "center" }]}
-                onPress={() => setBuildingOpen(true)}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.btnText}>{t("open_layout_editor")}</Text>
-                <Ionicons name="arrow-forward" size={18} color={WHITE} style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
+        <View style={[styles.sectionCard, { backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#EDE9FE", paddingVertical: 25 }]}>
+          <View style={{ alignItems: "center" }}>
+            <View style={[step3Styles.iconCircle, { backgroundColor: "#EDE9FE" }]}>
+              <Ionicons name="business" size={40} color={LIGHT_PURPLE} />
             </View>
+
+            <Text style={{ color: LIGHT_PURPLE, fontWeight: "800", fontSize: 20 }}>
+              {floors.length} {t("floors")}
+            </Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4, marginBottom: 15 }}>
+              {totalFlatsCount} {t("flats")} {t("total") || "Total"}
+            </Text>
+
+            <View style={{ height: 1, width: "80%", backgroundColor: "#E5E7EB", marginVertical: 10 }} />
+
+            <Text style={{ color: "#111827", fontWeight: "bold", fontSize: 16, marginTop: 10 }}>
+              Configure Your Building Layout
+            </Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, textAlign: "center", marginTop: 4, marginBottom: 20, paddingHorizontal: 20 }}>
+              Add flats, set dimensions, and organize your building structure.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.btn, { width: "100%", flexDirection: "row", justifyContent: "center" }]}
+              onPress={() => setBuildingOpen(true)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.btnText}>{t("open_layout_editor")}</Text>
+              <Ionicons name="arrow-forward" size={18} color={WHITE} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           </View>
+        </View>
       )}
 
       {/* Bottom Summary Bar */}
@@ -4293,23 +4396,11 @@ function ApartmentLayout({ onUpdateFloors }) {
         <View style={[styles.sectionCard, { flexDirection: "row", justifyContent: "space-between", paddingVertical: 15 }]}>
           <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
             <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="layers-outline" size={20} color={LIGHT_PURPLE} />
+              <Ionicons name="layers-outline" size={20} color={LIGHT_PURPLE} />
             </View>
             <View>
               <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{floors.length}</Text>
               <Text style={{ color: "#6B7280", fontSize: 11 }}>Floors</Text>
-            </View>
-          </View>
-          
-          <View style={{ width: 1, backgroundColor: "#E5E7EB", marginHorizontal: 10 }} />
-
-          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, justifyContent: "center" }}>
-            <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="apps-outline" size={20} color={LIGHT_PURPLE} />
-            </View>
-            <View>
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{totalFlatsCount}</Text>
-              <Text style={{ color: "#6B7280", fontSize: 11 }}>Flats</Text>
             </View>
           </View>
 
@@ -4317,11 +4408,11 @@ function ApartmentLayout({ onUpdateFloors }) {
 
           <View style={{ flexDirection: "row", alignItems: "center", flex: 1, justifyContent: "flex-end" }}>
             <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="resize-outline" size={20} color={LIGHT_PURPLE} />
+              <Ionicons name="apps-outline" size={20} color={LIGHT_PURPLE} />
             </View>
             <View>
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>—</Text>
-              <Text style={{ color: "#6B7280", fontSize: 11 }}>Area</Text>
+              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{totalFlatsCount}</Text>
+              <Text style={{ color: "#6B7280", fontSize: 11 }}>Flats</Text>
             </View>
           </View>
         </View>
@@ -4433,7 +4524,8 @@ function ApartmentLayout({ onUpdateFloors }) {
                   style={[step3Styles.primaryBtn, { flex: 1 }]}
                   onPress={addFloorManually}
                 >
-                  <Text style={step3Styles.btnText}>+ {t("add_floor")}</Text>
+                  <Ionicons name="add-outline" size={18} color={WHITE} style={{ marginRight: 6 }} />
+                  <Text style={step3Styles.btnText}>{t("add_floor")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -4500,7 +4592,7 @@ function ApartmentLayout({ onUpdateFloors }) {
                     style={step3Styles.setBtn}
                     onPress={generateFlatsForFloor}
                   >
-                    <Text style={step3Styles.btnText}>{t("set")}</Text>
+                    <Text style={step3Styles.btnText}>{t("add")}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={step3Styles.setBtn}
@@ -4593,33 +4685,6 @@ function ApartmentLayout({ onUpdateFloors }) {
                       <Text style={step3Styles.btnText}>{t("apply_bhk")}</Text>
                     </TouchableOpacity>
                   </View>
-                ) : selectedFlat !== null ? (
-                  <View style={step3Styles.sharingBox}>
-                    <Text style={step3Styles.sharingTitle}>
-                      {t("bhk_for_flat")} {" "}
-                      {floors[selectedFloor].floorNo * 100 +
-                        floors[selectedFloor].flats[selectedFlat].flatNo}
-                    </Text>
-                    <View style={step3Styles.sharingRow}>
-                      <TouchableOpacity onPress={() => updateBhk(-1)}>
-                        <Ionicons
-                          name="remove-circle"
-                          size={48}
-                          color="#EF4444"
-                        />
-                      </TouchableOpacity>
-                      <Text style={step3Styles.bedCount}>
-                        {floors[selectedFloor].flats[selectedFlat].bhk}
-                      </Text>
-                      <TouchableOpacity onPress={() => updateBhk(1)}>
-                        <Ionicons
-                          name="add-circle"
-                          size={48}
-                          color={LIGHT_PURPLE}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
                 ) : (
                   <View style={{ flexDirection: "row", gap: 10 }}>
                     <TouchableOpacity
@@ -4630,6 +4695,108 @@ function ApartmentLayout({ onUpdateFloors }) {
                     </TouchableOpacity>
                   </View>
                 )}
+
+                {/* Flat Sharing Modal */}
+                <Modal
+                  visible={flatSharingModalVisible}
+                  transparent={true}
+                  animationType="fade"
+                  onRequestClose={() => setFlatSharingModalVisible(false)}
+                >
+                  <View style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.45)',
+                  }}>
+                    <View style={{
+                      width: '82%',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: 20,
+                      paddingVertical: 28,
+                      paddingHorizontal: 24,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 8 },
+                      shadowOpacity: 0.18,
+                      shadowRadius: 24,
+                      elevation: 12,
+                    }}>
+                      <Text style={{
+                        fontSize: 18,
+                        fontWeight: '700',
+                        color: '#1F2937',
+                        textAlign: 'center',
+                        marginBottom: 20,
+                      }}>
+                        {flatSharingModalIndex !== null
+                          ? `${t("flat") || "Flat"} ${floors[selectedFloor]?.floorNo * 100 + floors[selectedFloor]?.flats[flatSharingModalIndex]?.flatNo} ${t("sharing")}`
+                          : ''}
+                      </Text>
+                      <Text style={{
+                        fontSize: 13,
+                        fontWeight: '500',
+                        color: '#6B7280',
+                        marginBottom: 8,
+                      }}>
+                        Enter Number of Sharing
+                      </Text>
+                      <TextInput
+                        placeholder="e.g. 2"
+                        placeholderTextColor="#9CA3AF"
+                        keyboardType="number-pad"
+                        value={flatSharingModalInput}
+                        onChangeText={setFlatSharingModalInput}
+                        autoFocus
+                        style={{
+                          borderWidth: 1,
+                          borderColor: '#E5E7EB',
+                          borderRadius: 14,
+                          paddingVertical: 14,
+                          paddingHorizontal: 16,
+                          backgroundColor: '#F9FAFB',
+                          fontSize: 16,
+                          color: '#111827',
+                          marginBottom: 24,
+                        }}
+                      />
+                      <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setFlatSharingModalVisible(false);
+                            setFlatSharingModalInput('');
+                            setFlatSharingModalIndex(null);
+                          }}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 14,
+                            borderRadius: 14,
+                            backgroundColor: '#F3F4F6',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Text style={{ color: '#6B7280', fontWeight: '600', fontSize: 15 }}>{t("cancel")}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={handleSaveFlatSharing}
+                          style={{
+                            flex: 1,
+                            paddingVertical: 14,
+                            borderRadius: 14,
+                            backgroundColor: '#7C3AED',
+                            alignItems: 'center',
+                            shadowColor: '#7C3AED',
+                            shadowOffset: { width: 0, height: 4 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 4,
+                          }}
+                        >
+                          <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 15 }}>{t("save") || "Save"}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
 
                 {bhkBatchModalOpen && (
                   <View style={step3Styles.batchPopup}>
@@ -4667,7 +4834,7 @@ function ApartmentLayout({ onUpdateFloors }) {
             {batchModalOpen && (
               <View style={step3Styles.batchPopup}>
                 <Text style={step3Styles.popupTitle}>
-                  {t("set")} {t("flats")} {t("for")} {selectedFloors.length} {t("floors")}
+                  {t("add")} {t("flats")} {t("for")} {selectedFloors.length} {t("floors")}
                 </Text>
                 <TextInput
                   placeholder={t("flats_per_floor")}
@@ -5030,45 +5197,45 @@ function CommercialLayout({ onUpdateFloors }) {
           >
             <Ionicons name="create-outline" size={16} color={WHITE} style={{ marginRight: 6 }} />
             <Text style={step3Styles.btnText}>
-              {floors.length > 0 ? t("update") : t("set")}
+              {t("add")}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {floors.length > 0 && (
-          <View style={[styles.sectionCard, { backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#EDE9FE", paddingVertical: 25 }]}>
-            <View style={{ alignItems: "center" }}>
-              <View style={[step3Styles.iconCircle, { backgroundColor: "#EDE9FE" }]}>
-                <Ionicons name="business" size={40} color={LIGHT_PURPLE} />
-              </View>
-
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "800", fontSize: 20 }}>
-                {floors.length} {t("floors")}
-              </Text>
-              <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4, marginBottom: 15 }}>
-                {configuredCount} {t("configured") || "Configured"}
-              </Text>
-
-              <View style={{ height: 1, width: "80%", backgroundColor: "#E5E7EB", marginVertical: 10 }} />
-
-              <Text style={{ color: "#111827", fontWeight: "bold", fontSize: 16, marginTop: 10 }}>
-                Configure Your Building Layout
-              </Text>
-              <Text style={{ color: "#6B7280", fontSize: 13, textAlign: "center", marginTop: 4, marginBottom: 20, paddingHorizontal: 20 }}>
-                Add sections, set dimensions, and organize your building structure.
-              </Text>
-
-              <TouchableOpacity
-                style={[styles.btn, { width: "100%", flexDirection: "row", justifyContent: "center" }]}
-                onPress={() => setBuildingOpen(true)}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.btnText}>{t("open_layout_editor")}</Text>
-                <Ionicons name="arrow-forward" size={18} color={WHITE} style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
+        <View style={[styles.sectionCard, { backgroundColor: "#F5F3FF", borderWidth: 1, borderColor: "#EDE9FE", paddingVertical: 25 }]}>
+          <View style={{ alignItems: "center" }}>
+            <View style={[step3Styles.iconCircle, { backgroundColor: "#EDE9FE" }]}>
+              <Ionicons name="business" size={40} color={LIGHT_PURPLE} />
             </View>
+
+            <Text style={{ color: LIGHT_PURPLE, fontWeight: "800", fontSize: 20 }}>
+              {floors.length} {t("floors")}
+            </Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, marginTop: 4, marginBottom: 15 }}>
+              {configuredCount} {t("configured") || "Configured"}
+            </Text>
+
+            <View style={{ height: 1, width: "80%", backgroundColor: "#E5E7EB", marginVertical: 10 }} />
+
+            <Text style={{ color: "#111827", fontWeight: "bold", fontSize: 16, marginTop: 10 }}>
+              Configure Your Building Layout
+            </Text>
+            <Text style={{ color: "#6B7280", fontSize: 13, textAlign: "center", marginTop: 4, marginBottom: 20, paddingHorizontal: 20 }}>
+              Add sections, set dimensions, and organize your building structure.
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.btn, { width: "100%", flexDirection: "row", justifyContent: "center" }]}
+              onPress={() => setBuildingOpen(true)}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.btnText}>{t("open_layout_editor")}</Text>
+              <Ionicons name="arrow-forward" size={18} color={WHITE} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           </View>
+        </View>
       )}
 
       {/* Bottom Summary Bar */}
@@ -5076,23 +5243,11 @@ function CommercialLayout({ onUpdateFloors }) {
         <View style={[styles.sectionCard, { flexDirection: "row", justifyContent: "space-between", paddingVertical: 15 }]}>
           <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
             <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="layers-outline" size={20} color={LIGHT_PURPLE} />
+              <Ionicons name="layers-outline" size={20} color={LIGHT_PURPLE} />
             </View>
             <View>
               <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{floors.length}</Text>
               <Text style={{ color: "#6B7280", fontSize: 11 }}>Floors</Text>
-            </View>
-          </View>
-          
-          <View style={{ width: 1, backgroundColor: "#E5E7EB", marginHorizontal: 10 }} />
-
-          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, justifyContent: "center" }}>
-            <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="grid-outline" size={20} color={LIGHT_PURPLE} />
-            </View>
-            <View>
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{configuredCount}</Text>
-              <Text style={{ color: "#6B7280", fontSize: 11 }}>Sections</Text>
             </View>
           </View>
 
@@ -5100,11 +5255,11 @@ function CommercialLayout({ onUpdateFloors }) {
 
           <View style={{ flexDirection: "row", alignItems: "center", flex: 1, justifyContent: "flex-end" }}>
             <View style={{ width: 36, height: 36, backgroundColor: "#F5F3FF", borderRadius: 8, justifyContent: "center", alignItems: "center", marginRight: 10 }}>
-               <Ionicons name="resize-outline" size={20} color={LIGHT_PURPLE} />
+              <Ionicons name="grid-outline" size={20} color={LIGHT_PURPLE} />
             </View>
             <View>
-              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>—</Text>
-              <Text style={{ color: "#6B7280", fontSize: 11 }}>Area</Text>
+              <Text style={{ color: LIGHT_PURPLE, fontWeight: "bold", fontSize: 16 }}>{configuredCount}</Text>
+              <Text style={{ color: "#6B7280", fontSize: 11 }}>Sections</Text>
             </View>
           </View>
         </View>
@@ -5216,7 +5371,8 @@ function CommercialLayout({ onUpdateFloors }) {
                   style={[step3Styles.primaryBtn, { flex: 1 }]}
                   onPress={addFloorManually}
                 >
-                  <Text style={step3Styles.btnText}>+ {t("add_floor")}</Text>
+                  <Ionicons name="add-outline" size={18} color={WHITE} style={{ marginRight: 6 }} />
+                  <Text style={step3Styles.btnText}>{t("add_floor")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -5278,7 +5434,7 @@ function CommercialLayout({ onUpdateFloors }) {
                     style={step3Styles.setBtn}
                     onPress={generateSectionsForFloor}
                   >
-                    <Text style={step3Styles.btnText}>{t("set")}</Text>
+                    <Text style={step3Styles.btnText}>{t("add")}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -5851,9 +6007,9 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     backgroundColor: "#F8F9FC",
-    paddingTop: Platform.OS === "ios" ? 10 : 30,
+    paddingTop: Platform.OS === "ios" ? 40 : 60,
     paddingHorizontal: 20,
-    paddingBottom: 15,
+    paddingBottom: 25,
   },
   headerRow: {
     flexDirection: "row",
@@ -5868,7 +6024,7 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     color: "#1F2937",
   },

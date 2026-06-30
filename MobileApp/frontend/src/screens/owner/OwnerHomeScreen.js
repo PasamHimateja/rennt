@@ -132,7 +132,7 @@ export default function BuildingScreen({ route }) {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.8,
     });
@@ -438,18 +438,33 @@ export default function BuildingScreen({ route }) {
   const activeLayout = editMode ? editableLayout : (response_data?.building_layout || []);
 
   const addFloor = () => {
-    const nextFloorNo = editableLayout.length > 0
-      ? Math.max(...editableLayout.map(f => f.floorNo || 0)) + 1
-      : 1;
-
-    const newFloor = {
-      floorNo: nextFloorNo,
-      ...(stayType === 'hostel' && { rooms: [{ roomNo: nextFloorNo * 100 + 1, beds: 1 }] }),
-      ...(stayType === 'apartment' && { flats: [{ flatNo: nextFloorNo * 100 + 1, bhk: 1 }] }),
-      ...(stayType === 'commercial' && { sections: [{ sectionNo: nextFloorNo * 100 + 1, area_sqft: 500 }] }),
-    };
-
-    setEditableLayout([...editableLayout, newFloor]);
+    let nextFloorNo = 1;
+    if (editableLayout && editableLayout.length > 0) {
+      const maxFloor = Math.max(...editableLayout.map(f => f.floorNo));
+      nextFloorNo = maxFloor + 1;
+    }
+    
+    let newFloor = { floorNo: nextFloorNo };
+    if (stayType === "hostel") {
+      newFloor.rooms = [{ roomNo: 1, beds: 1 }];
+    } else if (stayType === "apartment") {
+      newFloor.flats = [{ flatNo: `${nextFloorNo}01`, bhk: 1 }];
+    } else if (stayType === "commercial") {
+      newFloor.sections = [{ sectionNo: 1, area_sqft: 500 }];
+    }
+    
+    const newLayout = [...editableLayout, newFloor];
+    setEditableLayout(newLayout);
+    
+    setTimeout(() => {
+      const newIndex = newLayout.length - 1;
+      setActiveIndex(newIndex);
+      syncSidebar(newIndex);
+      if (sliderRef.current) {
+        sliderRef.current.scrollTo({ x: newIndex * snap, animated: true });
+      }
+      Alert.alert("Success", "Floor added successfully");
+    }, 100);
   };
 
   const addUnit = (floorNo) => {
@@ -1010,14 +1025,14 @@ export default function BuildingScreen({ route }) {
   //     }
 
   //     const response = await fetch(
-  //       "http://192.168.1.161.26:8000/api/tenentbeds/",
+  //       "http://192.168.1.26:8000/api/tenentbeds/",
   //       {
   //         method: "POST",
   //         body: formData,
   //       }
   //     );
   // const res1 = await fetch(
-  //       "http://192.168.1.161.26:8000/api/apartmentbeds/",
+  //       "http://192.168.1.26:8000/api/apartmentbeds/",
   //        {
   //         method: "POST",
   //         body: formData,
@@ -1448,7 +1463,11 @@ try {
             <View style={styles.premiumIllustrationContainer}>
               <View style={styles.glowRing1} />
               <View style={styles.glowRing2} />
-              <Ionicons name="business" size={38} color="#FFF" />
+              <Image
+                source={require("../../../assets/images/rent2.png")}
+                style={styles.homeHeaderLogo}
+                resizeMode="cover"
+              />
             </View>
           </View>
 
@@ -1654,6 +1673,23 @@ try {
                           {editMode && (
                             <>
                               <TouchableOpacity
+                                onPress={addFloor}
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  backgroundColor: "#6C2BD9",
+                                  paddingVertical: 4,
+                                  paddingHorizontal: 8,
+                                  borderRadius: 6,
+                                  marginLeft: 12
+                                }}
+                              >
+                                <Ionicons name="layers" size={14} color="white" />
+                                <Text style={{ color: "white", fontSize: 11, fontWeight: "600", marginLeft: 2 }}>
+                                  Add Floor
+                                </Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
                                 onPress={() => {
                                   const floorNo = item.floorNo || parseInt(item.floor.replace("Floor ", ""));
                                   addUnit(floorNo);
@@ -1665,7 +1701,7 @@ try {
                                   paddingVertical: 4,
                                   paddingHorizontal: 8,
                                   borderRadius: 6,
-                                  marginLeft: 12
+                                  marginLeft: 8
                                 }}
                               >
                                 <Ionicons name="add" size={14} color="white" />
@@ -3317,6 +3353,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
+    overflow: "hidden",
+  },
+  homeHeaderLogo: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#FFFFFF",
   },
   glowRing1: {
     position: "absolute",

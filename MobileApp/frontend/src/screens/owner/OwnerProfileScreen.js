@@ -868,7 +868,7 @@ export default function OwnerProfile({ navigation }) {
               <Ionicons name="person-add-outline" size={24} color="#7C3AED" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937' }}>{t("add_another_account") || "Add Another Account"}</Text>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#1F2937' }}>{t("add_another_Property") || "Add another property"}</Text>
               <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{t("login_with_different") || "Login with a different account"}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />

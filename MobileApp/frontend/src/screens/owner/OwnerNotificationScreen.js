@@ -22,7 +22,7 @@ import BASE_URL, { fetchWithAuth } from "@/src/config/Api";
 import COLORS from "../../theme/colors";
 
 const OwnerNotificationScreen = ({ route }) => {
-   const { t } = useLanguage();
+  const { t } = useLanguage();
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
     const date = new Date(dateStr);
@@ -58,6 +58,8 @@ const OwnerNotificationScreen = ({ route }) => {
 
   const navigation = useNavigation();
   const phone = route?.params?.phone;
+  const ownerPropertyType = (route?.params?.propertyType || "").toLowerCase();
+
   const {
     setRequests: setGlobalRequests,
     refreshTrigger,
@@ -66,22 +68,75 @@ const OwnerNotificationScreen = ({ route }) => {
     clearAllNotifications,
     clearedIds
   } = useContext(BookingContext);
- 
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
- 
-
   const fetchRequests = async () => {
     if (!phone) return;
-    if (!refreshing) setLoading(true);
+    // Only show full-screen loading on initial fetch to prevent UI flicker
+    if (!refreshing && requests.length === 0) setLoading(true);
     try {
       const res = await fetchWithAuth(`${BASE_URL}/api/owner_requests/${encodeURIComponent(phone)}/`);
       const data = await res.json();
-      setRequests(data);
-      setGlobalRequests(data);
+      
+      const mockData = [
+        {
+          id: "mock1",
+          db_id: "mock1",
+          type: "existing_tenant",
+          name: "Ram",
+          phone: "9876543210",
+          status: "pending",
+          propertyName: "Demo Hostel",
+          propertyType: "Hostel",
+          floor: "2",
+          room: "205",
+          bed: "B",
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "mock2",
+          db_id: "mock2",
+          type: "existing_tenant",
+          name: "Ram",
+          phone: "9876543210",
+          status: "pending",
+          propertyName: "Demo Apartment",
+          propertyType: "Apartment",
+          floor: "3",
+          flat: "A-302",
+          sharing: "2BHK",
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "mock3",
+          db_id: "mock3",
+          type: "existing_tenant",
+          name: "Ram",
+          phone: "9876543210",
+          status: "pending",
+          propertyName: "Demo Commercial",
+          propertyType: "Commercial",
+          floor: "1",
+          room: "C-101",
+          createdAt: new Date().toISOString()
+        }
+      ];
+
+      const combinedData = [...mockData, ...(Array.isArray(data) ? data : [])];
+      
+      const filteredData = combinedData.filter(item => {
+        if (!ownerPropertyType) return true; // If no type passed, show all
+        const itemType = (item.propertyType || item.property_type || "").toLowerCase();
+        // Match the specific property type, fallback to showing if item has no type to not break existing
+        if (!itemType) return true;
+        return itemType === ownerPropertyType;
+      });
+
+      setRequests(filteredData);
+      setGlobalRequests(filteredData);
     } catch (error) {
       Alert.alert("Error", "Unable to connect to server");
     } finally {
@@ -142,7 +197,7 @@ const OwnerNotificationScreen = ({ route }) => {
 
   const getStatusConfig = (item) => {
     const status = (item.status || "pending").toLowerCase();
-    
+
     if (item.type === "issue") {
       switch (status) {
         case "completed": return { label: "Resolved", color: COLORS.SUCCESS, bg: "#E8F5E9" };
@@ -150,7 +205,7 @@ const OwnerNotificationScreen = ({ route }) => {
         default: return { label: "Open", color: COLORS.ERROR, bg: "#FFEBEE" };
       }
     }
-    
+
     if (item.type === "payment") {
       switch (status) {
         case "success": return { label: "Success", color: COLORS.SUCCESS, bg: "#E8F5E9" };
@@ -181,8 +236,8 @@ const OwnerNotificationScreen = ({ route }) => {
 
     if (item.type === "issue") {
       return (
-        <TouchableOpacity 
-          key={item.id} 
+        <TouchableOpacity
+          key={item.id}
           style={styles.card}
           onPress={() => navigation.navigate("OwnerNavigation", { screen: "Issues" })}
         >
@@ -216,8 +271,8 @@ const OwnerNotificationScreen = ({ route }) => {
 
     if (item.type === "payment") {
       return (
-        <TouchableOpacity 
-          key={item.id} 
+        <TouchableOpacity
+          key={item.id}
           style={styles.card}
           onPress={() => navigation.navigate("OwnerNavigation", { screen: "Payments" })}
         >
@@ -254,8 +309,19 @@ const OwnerNotificationScreen = ({ route }) => {
               <Text style={styles.avatarText}>{item.name?.[0]?.toUpperCase()}</Text>
             </View>
             <View>
-              <Text style={styles.userName}>{item.name}</Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Text style={styles.userName}>{item.name}</Text>
+                {item.type === "existing_tenant" ? (
+                  <View style={{ backgroundColor: "#E0E7FF", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#4338CA" }}>Existing Tenant</Text>
+                  </View>
+                ) : item.type !== "issue" && item.type !== "payment" ? (
+                  <View style={{ backgroundColor: "#ECFDF5", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                    <Text style={{ fontSize: 10, fontWeight: "700", color: "#059669" }}>New Tenant</Text>
+                  </View>
+                ) : null}
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
                 <Text style={styles.userPhone}>{item.phone}</Text>
                 <Text style={styles.timeDot}>•</Text>
                 <Text style={styles.timeText}>
@@ -270,11 +336,28 @@ const OwnerNotificationScreen = ({ route }) => {
         </View>
 
         <View style={styles.propertySection}>
-          <Text style={styles.propertyName}>{item.propertyName}</Text>
+          <Text style={styles.propertyName}>{item.propertyName || "Selected Property"}</Text>
           <View style={styles.badgeRow}>
-            {renderBadge("home-outline", item.propertyType)}
-            {item.sharing && renderBadge("people-outline", `${item.sharing} sharing`)}
-            {item.flat && renderBadge("business-outline", `Flat ${item.flat}`)}
+            {item.type !== "existing_tenant" && item.propertyType && renderBadge("home-outline", item.propertyType)}
+            {item.floor && renderBadge("business-outline", `Floor ${item.floor}`)}
+
+            {item.type === "existing_tenant" ? (
+              <>
+                {item.propertyType === "Hostel" && item.room && renderBadge("business-outline", `Room ${item.room}`)}
+                {item.propertyType === "Hostel" && item.bed && renderBadge("bed-outline", `Bed ${item.bed}`)}
+                {item.propertyType === "Apartment" && item.flat && renderBadge("business-outline", `Room ${item.flat}`)}
+                {item.propertyType === "Apartment" && item.sharing && renderBadge("home-outline", `Type ${item.sharing}`)}
+                {item.propertyType === "Commercial" && item.room && renderBadge("business-outline", `Unit ${item.room}`)}
+              </>
+            ) : (
+              <>
+                {item.room && renderBadge("business-outline", `Room ${item.room}`)}
+                {item.flat && renderBadge("business-outline", `Flat ${item.flat}`)}
+                {item.bed && renderBadge("bed-outline", `Bed ${item.bed}`)}
+                {item.sharing && renderBadge("people-outline", item.sharing)}
+              </>
+            )}
+
             {item.section && renderBadge("business-outline", `Section ${item.section}`)}
           </View>
         </View>
@@ -290,27 +373,48 @@ const OwnerNotificationScreen = ({ route }) => {
           </View>
         </View>
 
-        
+
 
         {status === "pending" ? (
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.btn, styles.allotBtn]}
-              onPress={() => navigation.navigate("OwnerNavigation", {
-                screen: "Home",
-                params: { phone, autoFillData: { ...item, requestId: item.db_id || item.id } }
-              })}
-            >
-              <Ionicons name="bed-outline" size={18} color={COLORS.WHITE} />
-              <Text style={styles.btnTextPrimary}>Allot Room</Text>
-            </TouchableOpacity>
+            {item.type === "existing_tenant" ? (
+              <>
+                <TouchableOpacity
+                  style={[styles.btn, styles.approveBtn]}
+                  onPress={() => handleAction("accepted", item.db_id || item.id)}
+                >
+                  <Ionicons name="checkmark-circle" size={18} color={COLORS.WHITE} />
+                  <Text style={styles.btnTextPrimary}>Accept</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.btn, styles.declineBtn]}
-              onPress={() => handleAction("rejected", item.db_id || item.id)}
-            >
-              <Text style={styles.btnTextSecondary}>Decline</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.btn, styles.declineBtn]}
+                  onPress={() => handleAction("rejected", item.db_id || item.id)}
+                >
+                  <Text style={styles.btnTextSecondary}>Decline</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.btn, styles.allotBtn]}
+                  onPress={() => navigation.navigate("OwnerNavigation", {
+                    screen: "Home",
+                    params: { phone, autoFillData: { ...item, requestId: item.db_id || item.id } }
+                  })}
+                >
+                  <Ionicons name="bed-outline" size={18} color={COLORS.WHITE} />
+                  <Text style={styles.btnTextPrimary}>Allot Room</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.btn, styles.declineBtn]}
+                  onPress={() => handleAction("rejected", item.db_id || item.id)}
+                >
+                  <Text style={styles.btnTextSecondary}>Decline</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         ) : status === "allotted" ? (
           <View style={styles.actionButtons}>
@@ -345,7 +449,7 @@ const OwnerNotificationScreen = ({ route }) => {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar barStyle="light-content" backgroundColor="#5F259F" translucent={false} />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>

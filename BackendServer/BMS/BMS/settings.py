@@ -192,3 +192,12 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'narusrinivasareddy2002@gmail.com'
 EMAIL_HOST_PASSWORD = 'kjiz qypw aecv uqmg'
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "otp-cache",
+    }
+}
+TWO_FACTOR_API_KEY = env("API_KEY")

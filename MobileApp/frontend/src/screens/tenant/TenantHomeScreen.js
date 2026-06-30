@@ -26,6 +26,7 @@ Notifications.setNotificationHandler({
 });
 
 import {
+  ActivityIndicator,
   Animated,
   ImageBackground,
   BackHandler,
@@ -203,9 +204,13 @@ const categories = [
 export default function TenantHomeScreen({ route }) {
 
   // PUSH NOTIFICATION SETUP
+  const pushRegisteredRef = useRef(false);
   useEffect(() => {
 
-    registerForPushNotifications();
+    if (!pushRegisteredRef.current) {
+      pushRegisteredRef.current = true;
+      registerForPushNotifications();
+    }
 
     const notificationListener =
       Notifications.addNotificationReceivedListener(notification => {
@@ -1266,7 +1271,7 @@ export default function TenantHomeScreen({ route }) {
           onReset={resetAllFilters}
           allProperties={allProperties}
         />
-      </SafeAreaView>
+    </SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -1327,17 +1332,7 @@ export function PropertyDetailsScreen(props) {
     return () => clearInterval(interval);
   }, [property, tenantEmail]);
 
-  const globalActiveStatuses = ["pending", "accepted", "allotted", "joined", "active", "occupied"];
-
-  // Is there any active request in the global state for ANY property?
-  const globalActiveRequest = requests?.find(r =>
-    globalActiveStatuses.includes((r.status || "").toLowerCase())
-  );
-
-  const isActiveForThisProperty = globalActiveRequest && globalActiveRequest.property_name === property.name;
-
-  // If globally active but NOT for this property, lock it out entirely.
-  const isGloballyLocked = globalActiveRequest && !isActiveForThisProperty;
+  // Removed auto-redirect loop to WelcomeScreen for accepted properties
 
   let buttonText = "Book Now";
   let buttonAction = "book";
@@ -1417,13 +1412,13 @@ export function PropertyDetailsScreen(props) {
   // Tenant Selection Modals State
   const [tenantTypeModalVisible, setTenantTypeModalVisible] = useState(false);
   const [existingTenantModalVisible, setExistingTenantModalVisible] = useState(false);
-
+  
   // Existing Tenant Structure State
   const [etFloor, setEtFloor] = useState("");
   const [etRoom, setEtRoom] = useState(""); // used for Room, Flat, Unit
   const [etBed, setEtBed] = useState(""); // used for Bed
   const [etSharing, setEtSharing] = useState(""); // used for Sharing in Apartment
-
+  
   // New dynamic flow states
   const [occupiedPopupVisible, setOccupiedPopupVisible] = useState(false);
   const [occupiedDetails, setOccupiedDetails] = useState(null);
@@ -1434,6 +1429,107 @@ export function PropertyDetailsScreen(props) {
   const [newUnitNumber, setNewUnitNumber] = useState("");
   const [newUnitType, setNewUnitType] = useState("");
   const [addedUnits, setAddedUnits] = useState([]);
+
+  // Dynamic layout from database
+  const [buildingLayout, setBuildingLayout] = useState(null);
+  const [occupiedBeds, setOccupiedBeds] = useState([]);
+  const [layoutLoading, setLayoutLoading] = useState(false);
+
+  const fetchPropertyLayout = async () => {
+    if (!property?.contact) return;
+    setLayoutLoading(true);
+    try {
+      const layoutRes = await fetchWithAuth(`${BASE_URL}/api/details/${encodeURIComponent(property.contact)}/`);
+      if (layoutRes.ok) {
+        const layoutData = await layoutRes.json();
+        setBuildingLayout(layoutData.building_layout || []);
+      } else {
+        console.log("Failed to fetch building layout", layoutRes.status);
+      }
+
+      let bedsUrl = `${BASE_URL}/api/getbeds/${encodeURIComponent(property.contact)}/`;
+      if (property.type === "Apartment") {
+        bedsUrl = `${BASE_URL}/api/getapartmentbeds/${encodeURIComponent(property.contact)}/`;
+      } else if (property.type === "Commercial") {
+        bedsUrl = `${BASE_URL}/api/getcommercialbeds/${encodeURIComponent(property.contact)}/`;
+      }
+
+      const bedsRes = await fetchWithAuth(bedsUrl);
+      if (bedsRes.ok) {
+        const bedsData = await bedsRes.json();
+        setOccupiedBeds(bedsData.data || []);
+      } else {
+        console.log("Failed to fetch occupied beds", bedsRes.status);
+      }
+    } catch (error) {
+      console.error("Error fetching property layout/beds:", error);
+    } finally {
+      setLayoutLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (property && existingTenantModalVisible) {
+      fetchPropertyLayout();
+    }
+  }, [property, existingTenantModalVisible]);
+
+  const submitExistingTenantRequest = async () => {
+    try {
+      console.log("EXISTING TENANT BOOK CLICKED");
+      const activePhone = tenantPhone || await AsyncStorage.getItem("tenantPhone");
+      
+      const payload = {
+        tenant_phone: activePhone,
+        owner_id: property.owner_id,
+        property_name: property.name,
+        floor_no: etFloor ? parseInt(etFloor.replace("Floor ", "")) : null,
+        room_no: etRoom ? parseInt(etRoom.replace("Room ", "").replace("Unit ", "").replace("-", "")) : null,
+        bed_no: etBed ? parseInt(etBed.replace("Bed ", "")) : null
+      };
+      
+      console.log(payload);
+
+      const response = await fetchWithAuth(`${BASE_URL}/api/existing-tenant-request/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log(response.status);
+      const responseData = await response.json();
+      console.log(responseData);
+
+      if (response.ok || response.status === 201 || response.status === 200) {
+        setExistingTenantModalVisible(false);
+        Alert.alert("Success", "Request sent successfully");
+        
+        // Refresh request status
+        try {
+          const res = await fetchWithAuth(
+            `${BASE_URL}/api/check_request_status/${encodeURIComponent(activePhone)}/${encodeURIComponent(property.contact)}/${encodeURIComponent(property.name)}/`
+          );
+          const statusData = await res.json();
+          if (statusData.status) {
+            setRequestStatus(statusData.status);
+          }
+        } catch (statusErr) {
+          console.log("Error refreshing status:", statusErr);
+        }
+
+        if (typeof fetchTenantRequests === "function") {
+          fetchTenantRequests();
+        }
+      } else {
+        Alert.alert("Error", responseData.message || "Failed to submit request");
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Something went wrong while booking");
+    }
+  };
 
   const handlePickDocument = async (type) => {
     try {
@@ -2382,14 +2478,14 @@ export function PropertyDetailsScreen(props) {
                     </Text>
                     <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap", marginBottom: 15 }}>
                       {["1 BHK", "2 BHK", "3 BHK"].map(t => (
-                        <TouchableOpacity
-                          key={t}
-                          onPress={() => setBhkType(t)}
-                          style={{
-                            paddingHorizontal: 16,
-                            paddingVertical: 10,
-                            borderRadius: 8,
-                            backgroundColor: bhkType === t ? COLORS.PRIMARY : "#f1f5f9"
+                        <TouchableOpacity 
+                          key={t} 
+                          onPress={() => setBhkType(t)} 
+                          style={{ 
+                            paddingHorizontal: 16, 
+                            paddingVertical: 10, 
+                            borderRadius: 8, 
+                            backgroundColor: bhkType === t ? COLORS.PRIMARY : "#f1f5f9" 
                           }}
                         >
                           <Text style={{ color: bhkType === t ? "#fff" : "#475569", fontWeight: "700" }}>{t}</Text>
@@ -2510,12 +2606,7 @@ export function PropertyDetailsScreen(props) {
           <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
         </TouchableOpacity>
 
-        {isGloballyLocked ? (
-          <View style={{ flex: 1, backgroundColor: "#f8fafc", borderRadius: 12, paddingVertical: 12, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#e2e8f0" }}>
-            <Text style={{ color: "#475569", fontWeight: "800", fontSize: 13, letterSpacing: 0.5 }}>YOU ARE REGISTERED</Text>
-            <Text style={{ color: "#10b981", fontWeight: "700", fontSize: 12, marginTop: 2 }}>STATUS: ACTIVE</Text>
-          </View>
-        ) : normalizedStatus === "pending" ? (
+        {normalizedStatus === "pending" ? (
           <View style={{ flex: 1, paddingLeft: 12, justifyContent: "center" }}>
             <View style={{ marginBottom: 6 }}>
               <Text style={{ color: "#f39c12", fontSize: 13, fontWeight: "700", textAlign: "center", textTransform: "uppercase" }}>
@@ -2920,7 +3011,7 @@ export function PropertyDetailsScreen(props) {
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" }}>
           <View style={{ width: "80%", backgroundColor: "#fff", borderRadius: 16, padding: 24 }}>
             <Text style={{ fontSize: 20, fontWeight: "800", color: "#1e293b", marginBottom: 20, textAlign: "center" }}>Select Tenant Type</Text>
-
+            
             <TouchableOpacity
               onPress={() => {
                 setTenantTypeModalVisible(false);
@@ -2969,153 +3060,267 @@ export function PropertyDetailsScreen(props) {
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={{ fontSize: 14, color: "#64748b", fontWeight: "700", marginBottom: 16 }}>Building: {property?.name || "Selected Property"}</Text>
 
-              <View style={{ gap: 20 }}>
-                {/* 1. FLOOR SELECTION */}
-                <View>
-                  <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", marginBottom: 10, textTransform: "uppercase" }}>1. Select Floor</Text>
-                  <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
-                    {[1, 2, 3, 4, 5].map(f => {
-                      const floorStr = `Floor ${f}`;
-                      return (
-                        <TouchableOpacity key={floorStr} onPress={() => { setEtFloor(floorStr); setEtRoom(""); setEtBed(""); setEtSharing(""); }} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: etFloor === floorStr ? COLORS.PRIMARY : "#f1f5f9" }}>
-                          <Text style={{ color: etFloor === floorStr ? "#fff" : "#475569", fontWeight: "700" }}>{floorStr}</Text>
-                        </TouchableOpacity>
-                      )
-                    })}
-                  </View>
+              {layoutLoading && (
+                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                  <ActivityIndicator size="small" color={COLORS.PRIMARY} />
+                  <Text style={{ marginTop: 8, fontSize: 12, color: "#64748b" }}>Loading actual layout...</Text>
                 </View>
+              )}
 
-                {/* 2. ROOM SELECTION (Depends on Floor) */}
-                {etFloor !== "" && (
+              {!layoutLoading && buildingLayout && buildingLayout.length === 0 && (
+                <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                  <Text style={{ fontSize: 13, color: "#ef4444", fontWeight: "600" }}>No layout registered for this property.</Text>
+                </View>
+              )}
+
+              {!layoutLoading && buildingLayout && buildingLayout.length > 0 && (
+                <View style={{ gap: 20 }}>
+                  {/* 1. FLOOR SELECTION */}
                   <View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", textTransform: "uppercase" }}>2. Select {property?.type === "Hostel" ? "Room" : property?.type === "Apartment" ? "Flat" : "Unit"}</Text>
-                      {property?.type === "Apartment" && (
-                        <TouchableOpacity onPress={() => setAddUnitModalVisible(true)} style={{ backgroundColor: "#e2e8f0", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: "#475569" }}>+ ADD UNIT</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                    <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", marginBottom: 10, textTransform: "uppercase" }}>1. Select Floor</Text>
                     <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
-                      {[...Array(10)].map((_, i) => {
-                        const floorNum = etFloor.replace("Floor ", "");
-                        const roomNum = i + 1;
-                        let rStr = "";
-                        if (property?.type === "Hostel") rStr = `${floorNum}-${roomNum < 10 ? '0' : ''}${roomNum}`;
-                        else if (property?.type === "Apartment") rStr = `${floorNum}${roomNum < 10 ? '0' : ''}${roomNum}`;
-                        else rStr = `C-${floorNum}0${roomNum}`;
-
-                        return (
-                          <TouchableOpacity key={rStr} onPress={() => { setEtRoom(rStr); setEtBed(""); setEtSharing(""); }} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: etRoom === rStr ? COLORS.PRIMARY : "#f1f5f9" }}>
-                            <Text style={{ color: etRoom === rStr ? "#fff" : "#475569", fontWeight: "700" }}>{rStr}</Text>
-                          </TouchableOpacity>
-                        )
-                      })}
-                      {/* Render dynamically added units for this floor */}
-                      {addedUnits.filter(u => `Floor ${u.floor}` === etFloor).map((u, i) => (
-                        <TouchableOpacity key={`added-${i}`} onPress={() => { setEtRoom(u.unit); setEtSharing(u.type); }} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: etRoom === u.unit ? COLORS.PRIMARY : "#f1f5f9", borderWidth: 1, borderColor: COLORS.PRIMARY }}>
-                          <Text style={{ color: etRoom === u.unit ? "#fff" : "#475569", fontWeight: "700" }}>{u.unit} ({u.type})</Text>
-                        </TouchableOpacity>
-                      ))}
+                      {[...buildingLayout]
+                        .sort((a, b) => a.floorNo - b.floorNo)
+                        .map(floorObj => {
+                          const floorStr = `Floor ${floorObj.floorNo}`;
+                          return (
+                            <TouchableOpacity
+                              key={floorStr}
+                              onPress={() => {
+                                setEtFloor(floorStr);
+                                setEtRoom("");
+                                setEtBed("");
+                                setEtSharing("");
+                              }}
+                              style={{
+                                paddingHorizontal: 16,
+                                paddingVertical: 10,
+                                borderRadius: 8,
+                                backgroundColor: etFloor === floorStr ? COLORS.PRIMARY : "#f1f5f9",
+                              }}
+                            >
+                              <Text style={{ color: etFloor === floorStr ? "#fff" : "#475569", fontWeight: "700" }}>{floorStr}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                     </View>
                   </View>
-                )}
 
-                {/* 3. BED / SHARING SELECTION (Depends on Room) */}
-                {etFloor !== "" && etRoom !== "" && property?.type === "Hostel" && (
-                  <View>
-                    <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", marginBottom: 10, textTransform: "uppercase" }}>3. Select Bed</Text>
-                    <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
-                      {[1, 2, 3, 4].map(b => {
-                        const bedStr = `Bed ${b}`;
-                        // Mock 25% chance of being occupied for demo purposes
-                        const isOccupied = (b + etRoom.length) % 4 === 0;
-                        return (
-                          <TouchableOpacity
-                            key={bedStr}
-                            onPress={() => {
-                              if (isOccupied) {
-                                setOccupiedDetails({ name: "Ram", phone: "9876543210", floor: etFloor, room: etRoom, bed: bedStr });
-                                setOccupiedPopupVisible(true);
-                              } else {
-                                setEtBed(bedStr);
-                              }
-                            }}
-                            style={{
-                              paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8,
-                              backgroundColor: isOccupied ? "#fef2f2" : etBed === bedStr ? COLORS.PRIMARY : "#f1f5f9",
-                              borderColor: isOccupied ? "#ef4444" : "transparent",
-                              borderWidth: isOccupied ? 1 : 0
-                            }}
-                          >
-                            <Text style={{ color: isOccupied ? "#ef4444" : etBed === bedStr ? "#fff" : "#475569", fontWeight: "700" }}>
-                              {bedStr} {isOccupied && "🔒"}
-                            </Text>
-                          </TouchableOpacity>
-                        )
-                      })}
+                  {/* 2. ROOM SELECTION (Depends on Floor) */}
+                  {etFloor !== "" && (() => {
+                    const selectedFloorNum = etFloor ? parseInt(etFloor.replace("Floor ", "")) : null;
+                    const currentFloorObj = buildingLayout.find(f => f.floorNo === selectedFloorNum);
+
+                    let itemsList = [];
+                    let label = "Room";
+                    if (property?.type === "Hostel") {
+                      itemsList = currentFloorObj?.rooms ? [...currentFloorObj.rooms].sort((a, b) => a.roomNo - b.roomNo) : [];
+                      label = "Room";
+                    } else if (property?.type === "Apartment") {
+                      itemsList = currentFloorObj?.flats ? [...currentFloorObj.flats].sort((a, b) => a.flatNo - b.flatNo) : [];
+                      label = "Flat";
+                    } else {
+                      itemsList = currentFloorObj?.sections ? [...currentFloorObj.sections].sort((a, b) => a.sectionNo - b.sectionNo) : [];
+                      label = "Unit";
+                    }
+
+                    if (itemsList.length === 0) {
+                      return (
+                        <View style={{ paddingVertical: 10 }}>
+                          <Text style={{ fontSize: 12, color: "#ef4444" }}>No {label}s registered on this floor.</Text>
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <View>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                          <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", textTransform: "uppercase" }}>2. Select {label}</Text>
+                          {property?.type === "Apartment" && (
+                            <TouchableOpacity onPress={() => setAddUnitModalVisible(true)} style={{ backgroundColor: "#e2e8f0", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}>
+                              <Text style={{ fontSize: 11, fontWeight: "700", color: "#475569" }}>+ ADD UNIT</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+                          {itemsList.map(item => {
+                            let keyStr = "";
+                            let displayStr = "";
+                            let onPressAction = () => {};
+
+                            if (property?.type === "Hostel") {
+                              keyStr = String(item.roomNo);
+                              displayStr = keyStr;
+                              onPressAction = () => {
+                                setEtRoom(keyStr);
+                                setEtBed("");
+                                setEtSharing("");
+                              };
+                            } else if (property?.type === "Apartment") {
+                              keyStr = String(item.flatNo);
+                              displayStr = keyStr;
+                              onPressAction = () => {
+                                setEtRoom(keyStr);
+                                setEtSharing(item.bhk);
+                              };
+                            } else {
+                              keyStr = String(item.sectionNo);
+                              displayStr = keyStr;
+                              onPressAction = () => {
+                                setEtRoom(keyStr);
+                              };
+                            }
+
+                            return (
+                              <TouchableOpacity
+                                key={keyStr}
+                                onPress={onPressAction}
+                                style={{
+                                  paddingHorizontal: 16,
+                                  paddingVertical: 10,
+                                  borderRadius: 8,
+                                  backgroundColor: etRoom === keyStr ? COLORS.PRIMARY : "#f1f5f9",
+                                }}
+                              >
+                                <Text style={{ color: etRoom === keyStr ? "#fff" : "#475569", fontWeight: "700" }}>{displayStr}</Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                          {/* Render dynamically added units for this floor */}
+                          {addedUnits.filter(u => `Floor ${u.floor}` === etFloor).map((u, i) => (
+                            <TouchableOpacity
+                              key={`added-${i}`}
+                              onPress={() => {
+                                setEtRoom(u.unit);
+                                setEtSharing(u.type);
+                              }}
+                              style={{
+                                paddingHorizontal: 16,
+                                paddingVertical: 10,
+                                borderRadius: 8,
+                                backgroundColor: etRoom === u.unit ? COLORS.PRIMARY : "#f1f5f9",
+                                borderWidth: 1,
+                                borderColor: COLORS.PRIMARY,
+                              }}
+                            >
+                              <Text style={{ color: etRoom === u.unit ? "#fff" : "#475569", fontWeight: "700" }}>{u.unit} ({u.type})</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })()}
+
+                  {/* 3. BED / SHARING SELECTION (Depends on Room) */}
+                  {etFloor !== "" && etRoom !== "" && property?.type === "Hostel" && (() => {
+                    const selectedFloorNum = etFloor ? parseInt(etFloor.replace("Floor ", "")) : null;
+                    const currentFloorObj = buildingLayout.find(f => f.floorNo === selectedFloorNum);
+                    const currentRoomObj = currentFloorObj?.rooms?.find(r => String(r.roomNo) === etRoom);
+                    const totalBedsNum = currentRoomObj?.beds || 0;
+                    
+                    const bedsArray = totalBedsNum > 0 ? Array.from({ length: totalBedsNum }, (_, i) => i + 1) : [];
+
+                    if (bedsArray.length === 0) {
+                      return (
+                        <View style={{ paddingVertical: 10 }}>
+                          <Text style={{ fontSize: 12, color: "#ef4444" }}>No beds registered in this room.</Text>
+                        </View>
+                      );
+                    }
+
+                    return (
+                      <View>
+                        <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", marginBottom: 10, textTransform: "uppercase" }}>3. Select Bed</Text>
+                        <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+                          {bedsArray.map(b => {
+                            const bedStr = `Bed ${b}`;
+                            const selectedRoomNum = etRoom ? parseInt(etRoom) : null;
+                            const isOccupied = occupiedBeds.some(
+                              item =>
+                                item.floor === selectedFloorNum &&
+                                item.roomno === selectedRoomNum &&
+                                item.bed === b
+                            );
+
+                            return (
+                              <TouchableOpacity
+                                key={bedStr}
+                                onPress={() => {
+                                  if (isOccupied) {
+                                    const occupiedRecord = occupiedBeds.find(
+                                      item =>
+                                        item.floor === selectedFloorNum &&
+                                        item.roomno === selectedRoomNum &&
+                                        item.bed === b
+                                    );
+                                    setOccupiedDetails({
+                                      name: occupiedRecord?.name || "Ram",
+                                      phone: occupiedRecord?.phone || "9876543210",
+                                      floor: etFloor,
+                                      room: etRoom,
+                                      bed: bedStr,
+                                    });
+                                    setOccupiedPopupVisible(true);
+                                  } else {
+                                    setEtBed(bedStr);
+                                  }
+                                }}
+                                style={{
+                                  paddingHorizontal: 16,
+                                  paddingVertical: 10,
+                                  borderRadius: 8,
+                                  backgroundColor: isOccupied ? "#fef2f2" : etBed === bedStr ? COLORS.PRIMARY : "#f1f5f9",
+                                  borderColor: isOccupied ? "#ef4444" : "transparent",
+                                  borderWidth: isOccupied ? 1 : 0,
+                                }}
+                              >
+                                <Text style={{ color: isOccupied ? "#ef4444" : etBed === bedStr ? "#fff" : "#475569", fontWeight: "700" }}>
+                                  {bedStr} {isOccupied && "🔒"}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })()}
+
+                  {etFloor !== "" && etRoom !== "" && property?.type === "Apartment" && etSharing !== "" && (
+                    <View>
+                      <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", marginBottom: 10, textTransform: "uppercase" }}>3. Flat Type</Text>
+                      <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
+                        <View style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: COLORS.PRIMARY }}>
+                          <Text style={{ color: "#fff", fontWeight: "700" }}>{etSharing}</Text>
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
+                </View>
+              )}
+            </ScrollView>
 
-                {etFloor !== "" && etRoom !== "" && property?.type === "Apartment" && (
-                  <View>
-                    <Text style={{ fontSize: 12, color: "#64748b", fontWeight: "800", marginBottom: 10, textTransform: "uppercase" }}>3. Select Type</Text>
-                    <View style={{ flexDirection: "row", gap: 10, flexWrap: "wrap" }}>
-                      {["1BHK", "2BHK", "3BHK"].map(t => (
-                        <TouchableOpacity key={t} onPress={() => setEtSharing(t)} style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: etSharing === t ? COLORS.PRIMARY : "#f1f5f9" }}>
-                          <Text style={{ color: etSharing === t ? "#fff" : "#475569", fontWeight: "700" }}>{t}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              <TouchableOpacity
-                disabled={
+            <TouchableOpacity
+              disabled={
+                (property?.type === "Hostel" && (!etFloor || !etRoom || !etBed)) ||
+                (property?.type === "Apartment" && (!etFloor || !etRoom || !etSharing)) ||
+                (property?.type === "Commercial" && (!etFloor || !etRoom))
+              }
+              onPress={submitExistingTenantRequest}
+              style={{
+                backgroundColor: COLORS.PRIMARY,
+                paddingVertical: 16,
+                borderRadius: 14,
+                alignItems: "center",
+                marginTop: 30,
+                opacity: (
                   (property?.type === "Hostel" && (!etFloor || !etRoom || !etBed)) ||
                   (property?.type === "Apartment" && (!etFloor || !etRoom || !etSharing)) ||
                   (property?.type === "Commercial" && (!etFloor || !etRoom))
-                }
-                onPress={() => {
-                  const reqData = {
-                    type: "existing_tenant",
-                    name: "Ram",
-                    phone: "9876543210",
-                    property_name: property?.name,
-                    propertyName: property?.name,
-                    propertyType: property?.type,
-                    sharing: property?.type === "Apartment" ? etSharing : undefined,
-                    flat: property?.type === "Apartment" ? etRoom : undefined,
-                    floor: etFloor.replace("Floor ", ""),
-                    room: (property?.type === "Hostel" || property?.type === "Commercial") ? etRoom.replace("Room ", "").replace("Unit ", "") : undefined,
-                    bed: property?.type === "Hostel" ? etBed.replace("Bed ", "") : undefined,
-                  };
-                  if (bookingContext?.submitOwnerRequest) {
-                    bookingContext.submitOwnerRequest(reqData);
-                  }
-                  setExistingTenantModalVisible(false);
-                  if (typeof setStatusModalVisible === "function") {
-                    setStatusModalVisible(true);
-                  }
-                }}
-                style={{
-                  backgroundColor: COLORS.PRIMARY,
-                  paddingVertical: 16,
-                  borderRadius: 14,
-                  alignItems: "center",
-                  marginTop: 30,
-                  opacity: (
-                    (property?.type === "Hostel" && (!etFloor || !etRoom || !etBed)) ||
-                    (property?.type === "Apartment" && (!etFloor || !etRoom || !etSharing)) ||
-                    (property?.type === "Commercial" && (!etFloor || !etRoom))
-                  ) ? 0.5 : 1
-                }}
-              >
-                <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>BOOK NOW</Text>
-              </TouchableOpacity>
-            </ScrollView>
+                ) ? 0.5 : 1
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold", fontSize: 16 }}>BOOK NOW</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -3128,7 +3333,7 @@ export function PropertyDetailsScreen(props) {
               <Ionicons name="lock-closed" size={32} color="#ef4444" />
             </View>
             <Text style={{ fontSize: 18, fontWeight: "800", color: "#ef4444", marginBottom: 20, letterSpacing: 0.5 }}>STATUS: OCCUPIED</Text>
-
+            
             <View style={{ width: "100%", backgroundColor: "#f8fafc", padding: 16, borderRadius: 12, gap: 10 }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Text style={{ color: "#64748b", fontWeight: "600" }}>Name:</Text>
@@ -3154,7 +3359,7 @@ export function PropertyDetailsScreen(props) {
               )}
             </View>
 
-            <TouchableOpacity
+            <TouchableOpacity 
               onPress={() => setOccupiedPopupVisible(false)}
               style={{ marginTop: 24, backgroundColor: "#ef4444", width: "100%", paddingVertical: 14, borderRadius: 12, alignItems: "center" }}
             >
@@ -3174,7 +3379,7 @@ export function PropertyDetailsScreen(props) {
                 <Ionicons name="close-circle" size={28} color="#94a3b8" />
               </TouchableOpacity>
             </View>
-
+            
             <Text style={{ fontWeight: "700", color: "#64748b", marginBottom: 8 }}>Floor Number</Text>
             <TextInput
               style={{ backgroundColor: "#f8fafc", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16 }}
@@ -3201,7 +3406,7 @@ export function PropertyDetailsScreen(props) {
               ))}
             </View>
 
-            <TouchableOpacity
+            <TouchableOpacity 
               disabled={!newUnitFloor || !newUnitNumber || !newUnitType}
               onPress={() => {
                 setAddedUnits([...addedUnits, { floor: newUnitFloor, unit: newUnitNumber, type: newUnitType }]);

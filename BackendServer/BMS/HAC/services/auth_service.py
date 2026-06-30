@@ -1,8 +1,12 @@
 import uuid
 import requests
+from datetime import timedelta
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import send_mail
-from HAC.models import Tenent, Owners
+from django.utils import timezone
+
+from HAC.models import Tenent, Owners, AdminPassword
 from HAC.serializers import TenentSerializer, TenantLoginSerializer, OwnerLoginSerializer
 from HAC.jwt_utils import generate_jwt_token
 from .common_service import CommonService
@@ -159,3 +163,340 @@ class AuthService:
 
             return {"exists": True, "status": user.status, "token": token, "user": user_data}
         return {"exists": False, "user": None}
+
+    @staticmethod
+    def send_otp(phone):
+ 
+        print("\n========== SEND OTP DEBUG ==========")
+        print("PHONE RECEIVED:", phone)
+        print("API KEY:", settings.TWO_FACTOR_API_KEY)
+ 
+        # Validate phone number
+        if not phone or len(phone) != 10:
+            print("ERROR: Invalid phone number")
+            raise ValueError("Invalid phone number")
+ 
+        # Check rate limiting
+        attempts = cache.get(f"otp_attempts_{phone}", 0)
+        print("CURRENT ATTEMPTS:", attempts)
+ 
+        if attempts >= 3:
+            print("ERROR: Too many attempts")
+            raise ValueError("Too many OTP requests. Try again later.")
+ 
+        url = (
+            f"https://2factor.in/API/V1/"
+            f"{settings.TWO_FACTOR_API_KEY}/SMS/{phone}/AUTOGEN3/OTP1"
+        )
+ 
+        print("OTP URL:", url)
+ 
+        try:
+            response = requests.get(url, timeout=15)
+ 
+            print("STATUS CODE:", response.status_code)
+            print("RAW RESPONSE:", response.text)
+ 
+            data = response.json()
+ 
+            print("PARSED RESPONSE:", data)
+ 
+            if data.get("Status") != "Success":
+                print("2FACTOR FAILED:", data)
+                raise ValueError(
+                    data.get("Details", "Failed to send OTP")
+                )
+ 
+            cache.set(
+                f"otp_session_{phone}",
+                data["Details"],
+                timeout=300
+            )
+ 
+            cache.set(
+                f"otp_attempts_{phone}",
+                attempts + 1,
+                timeout=600
+            )
+ 
+            print("OTP SENT SUCCESSFULLY")
+            print("SESSION ID SAVED:", data["Details"])
+            print("===================================\n")
+ 
+            return {
+                "message": "OTP sent successfully"
+            }
+ 
+        except Exception as e:
+            print("SEND OTP EXCEPTION:", str(e))
+            print("===================================\n")
+            raise e
+   
+    @staticmethod
+    def verify_otp(phone, otp, role):
+ 
+        phone = str(phone)[-10:]
+ 
+        if not phone or not otp:
+            raise ValueError("Phone and OTP are required")
+ 
+        session_id = cache.get(f"otp_session_{phone}")
+ 
+        if not session_id:
+            raise ValueError("OTP expired or not found")
+ 
+        url = (
+            f"https://2factor.in/API/V1/"
+            f"{settings.TWO_FACTOR_API_KEY}/SMS/VERIFY/"
+            f"{session_id}/{otp}"
+        )
+ 
+        response = requests.get(url, timeout=10)
+        data = response.json()
+ 
+        print("VERIFY RESPONSE:", data)
+ 
+        if data.get("Status") != "Success":
+            raise ValueError("Invalid OTP")
+ 
+        cache.delete(f"otp_session_{phone}")
+        cache.delete(f"otp_attempts_{phone}")
+ 
+        print("LOGIN ROLE:", role)
+ 
+        # OWNER LOGIN
+        if role == "owner":
+ 
+            owner = CommonService.get_owner(phone)
+            print("OWNER FOUND:", owner)
+ 
+            if owner:
+                token = generate_jwt_token(
+                    user_id=owner.pk,
+                    role="owner",
+                    phone=owner.phone
+                )
+ 
+                return {
+                    "verified": True,
+                    "exists": True,
+                    "role": "owner",
+                    "status": owner.status,
+                    "token": token,
+                    "user": {
+                        "id": owner.pk,
+                        "name": owner.name,
+                        "phone": owner.phone
+                    }
+                }
+ 
+            return {
+                "verified": True,
+                "exists": False
+            }
+ 
+        # TENANT LOGIN
+        elif role == "tenant":
+ 
+            tenant = CommonService.get_tenant(phone)
+            print("TENANT FOUND:", tenant)
+ 
+            if tenant:
+                token = generate_jwt_token(
+                    user_id=tenant.id,
+                    role="tenant",
+                    phone=tenant.phone
+                )
+ 
+                return {
+                    "verified": True,
+                    "exists": True,
+                    "role": "tenant",
+                    "token": token,
+                    "user": {
+                        "id": tenant.id,
+                        "name": tenant.name,
+                        "phone": tenant.phone
+                    }
+                }
+ 
+            return {
+                "verified": True,
+                "exists": False
+            }
+ 
+        raise ValueError("Invalid role")
+
+    ADMIN_PHONE = "6281808454"
+
+    @staticmethod
+    def send_admin_otp(phone):
+
+        if phone != AuthService.ADMIN_PHONE:
+            raise ValueError(
+                "Please enter a valid number to access the admin panel"
+            )
+
+        url = (
+            f"https://2factor.in/API/V1/"
+            f"{settings.TWO_FACTOR_API_KEY}/SMS/"
+            f"{phone}/AUTOGEN/AdminOTP"
+        )
+
+        response = requests.get(url, timeout=15)
+        data = response.json()
+
+        if data.get("Status") != "Success":
+            raise ValueError("Failed to send OTP")
+
+        cache.set(
+            f"admin_session_{phone}",
+            data["Details"],
+            timeout=300
+        )
+
+        return {
+            "message": "OTP sent successfully"
+        }
+
+    @staticmethod
+    def verify_admin_otp(phone, otp):
+
+        if phone != AuthService.ADMIN_PHONE:
+            raise ValueError("Unauthorized access")
+
+        session_id = cache.get(f"admin_session_{phone}")
+
+        if not session_id:
+            raise ValueError("OTP expired")
+
+        url = (
+            f"https://2factor.in/API/V1/"
+            f"{settings.TWO_FACTOR_API_KEY}/SMS/VERIFY/"
+            f"{session_id}/{otp}"
+        )
+
+        response = requests.get(url, timeout=15)
+        data = response.json()
+
+        if data.get("Status") != "Success":
+            raise ValueError("Invalid OTP")
+
+        cache.delete(f"admin_session_{phone}")
+
+        admin_password = AdminPassword.objects.filter(
+            phone=phone
+        ).first()
+
+        if admin_password:
+
+            expiry_time = (
+                admin_password.created_at +
+                timedelta(minutes=10)
+            )
+
+            if timezone.now() < expiry_time:
+                return {
+                    "status": "existing_password",
+                    "message": "Enter existing password"
+                }
+
+            admin_password.delete()
+
+        return {
+            "status": "create_password",
+            "message": "Create a new password"
+        }
+
+    @staticmethod
+    def admin_password_login(phone, password, action):
+
+        if phone != AuthService.ADMIN_PHONE:
+            raise ValueError("Unauthorized access")
+
+        if action == "create":
+
+            AdminPassword.objects.filter(
+                phone=phone
+            ).delete()
+
+            AdminPassword.objects.create(
+                phone=phone,
+                password=password
+            )
+
+            token = generate_jwt_token(
+                user_id=1,
+                role="admin",
+                phone=phone
+            )
+
+            return {
+                "message": "Password created successfully",
+                "token": token
+            }
+
+        elif action == "login":
+
+            admin = AdminPassword.objects.filter(
+                phone=phone,
+                password=password
+            ).first()
+
+            if not admin:
+                raise ValueError("Invalid password")
+
+            expiry_time = (
+                admin.created_at +
+                timedelta(minutes=10)
+            )
+
+            if timezone.now() > expiry_time:
+                admin.delete()
+                raise ValueError(
+                    "Password expired. Create a new password."
+                )
+
+            token = generate_jwt_token(
+                user_id=1,
+                role="admin",
+                phone=phone
+            )
+
+            return {
+                "message": "Login successful",
+                "token": token
+            }
+
+        raise ValueError("Invalid action")
+
+    @staticmethod
+    def check_admin_password_status(phone):
+
+        if phone != AuthService.ADMIN_PHONE:
+            raise ValueError("Unauthorized access")
+
+        admin = AdminPassword.objects.filter(
+            phone=phone
+        ).first()
+
+        if not admin:
+            return {
+                "status": "expired"
+            }
+
+        expiry_time = (
+            admin.created_at +
+            timedelta(minutes=10)
+        )
+
+        if timezone.now() > expiry_time:
+            admin.delete()
+            return {
+                "status": "expired"
+            }
+
+        return {
+            "status": "valid"
+        }
+   

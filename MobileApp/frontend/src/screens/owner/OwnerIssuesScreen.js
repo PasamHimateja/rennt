@@ -340,7 +340,7 @@ export default function OwnerIssues() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#5F259F" translucent={false} />
       <LinearGradient
-        colors={["#E9D5FF", "#DDD6FE", "#C4B5FD"]}
+        colors={['#5F259F', '#7C3AED', '#8B5CF6']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -363,10 +363,10 @@ export default function OwnerIssues() {
               ? issues.length
               : issues.filter((i) => i.status === status).length;
 
-          const label = status === "All" ? t('all') :
-            status === "Pending" ? t('pending ') :
-              status === "In Progress" ? t('progress') :
-                t('completed');
+          const label = status === "All" ? (t('all') || "All") :
+            status === "Pending" ? (t('pending_count') || "Pending") :
+              status === "In Progress" ? (t('progress') || "Progress") :
+                (t('completed') || "Completed");
 
           return (
             <TouchableOpacity
@@ -642,19 +642,20 @@ const SummaryCard = ({ label, count, color, isActive }) => (
       styles.summaryCard,
       {
         borderColor: color,
-        borderWidth: isActive ? 1.5 : 0,
-        backgroundColor: isActive ? `${color}60` : `${color}40`,
+        borderWidth: 1.5,
+        backgroundColor: isActive ? color : `${color}15`,
       },
     ]}
   >
-    <Text style={[styles.summaryCount, { color }]}>{count}</Text>
     <Text
       style={[
         styles.summaryLabel,
-        { color: isActive ? color : COLORS.TEXT_SECONDARY },
+        { color: isActive ? "#FFF" : color },
       ]}
+      numberOfLines={1}
+      adjustsFontSizeToFit
     >
-      {label}
+      {label} ({count})
     </Text>
   </View>
 );
@@ -689,13 +690,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 26,
     fontWeight: "800",
-    color: "#3B0764",
+    color: "#FFFFFF",
     letterSpacing: 0.3,
   },
 
   headerSubtitle: {
     fontSize: 13,
-    color: "#6D28D9",
+    color: "rgba(255, 255, 255, 0.8)",
     fontWeight: "600",
     marginTop: 3,
   },
@@ -945,15 +946,12 @@ const styles = StyleSheet.create({
 
   summaryCard: {
     flex: 1,
-    borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 6,
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 2,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 3,
+    justifyContent: "center",
+    minHeight: 40,
   },
 
   summaryCount: {
@@ -962,10 +960,8 @@ const styles = StyleSheet.create({
   },
 
   summaryLabel: {
-    fontSize: 12,
-    marginTop: 5,
-    color: COLORS.TEXT_SECONDARY,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
     textAlign: "center",
   },
 
